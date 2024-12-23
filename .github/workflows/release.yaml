@@ -37,6 +37,6 @@ jobs:
 
       - run: go build -o main main.go
 
-      - run: 
-          docker build -t pierre781/sls-local-server:${{ github.ref_name }} -f Dockerfile . && \
-          docker push pierre781/sls-local-server:${{ github.ref_name }}
+      - run: docker build -t pierre781/sls-local-server:${{ github.ref_name }} -f Dockerfile .
+
+      - run: docker push pierre781/sls-local-server:${{ github.ref_name }}
