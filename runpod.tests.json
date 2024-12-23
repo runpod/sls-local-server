@@ -1,0 +1,74 @@
+[
+      {
+        "id": 0,
+        "name": "validation_text_input",
+        "input": {
+          "text": "Hello world",
+          "language": "en"
+        },
+        "expected_output": {
+          "status": "success",
+          "translated_text": "Bonjour le monde",
+          "confidence": 0.95
+        },
+        "expected_status": 200,
+        "timeout": 3000
+      },
+      {
+        "id": 1,
+        "name": "error_empty_input",
+        "input": {
+          "text": "",
+          "language": "fr"
+        },
+        "expected_output": {
+          "error": "Input text cannot be empty"
+        },
+        "expected_status": 400,
+        "timeout": 1000
+      },
+      {
+        "id": 2,
+        "name": "validation_long_text",
+        "input": {
+          "text": "This is a very long text that needs to be processed",
+          "language": "es"
+        },
+        "expected_output": {
+          "status": "success",
+          "chunks": ["chunk1", "chunk2"],
+          "processing_time": 2.5
+        },
+        "expected_status": 200,
+        "timeout": 5000
+      },
+      {
+        "id": 3,
+        "name": "error_invalid_language",
+        "input": {
+          "text": "Test text",
+          "language": "xx"
+        },
+        "expected_output": {
+          "error": "Unsupported language code"
+        },
+        "expected_status": 400,
+        "timeout": 1000
+      },
+      {
+        "id": 4,
+        "name": "performance_test",
+        "input": {
+          "text": "Performance test input",
+          "language": "de",
+          "quality": "high"
+        },
+        "expected_output": {
+          "status": "success",
+          "result": "Leistungstesteingabe",
+          "quality_score": 0.98
+    },
+    "expected_status": 200,
+    "timeout": 6000
+  }
+]
