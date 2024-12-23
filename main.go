@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	prettyconsole "github.com/thessem/zap-prettyconsole"
@@ -190,6 +191,39 @@ func (h *Handler) JobDone(c *gin.Context) {
 	})
 }
 
+// LoggerMiddleware creates a middleware for logging requests
+func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+		
+		// Log request
+		logger.Info("Incoming request",
+			zap.String("path", path),
+			zap.String("query", query),
+			zap.String("method", c.Request.Method),
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("user_agent", c.Request.UserAgent()),
+		)
+
+		// Process request
+		c.Next()
+
+		// Log response
+		latency := time.Since(start)
+		status := c.Writer.Status()
+		
+		logger.Info("Request completed",
+			zap.String("path", path),
+			zap.Int("status", status),
+			zap.Duration("latency", latency),
+			zap.Int("body_size", c.Writer.Size()),
+			zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
+		)
+	}
+}
+
 func main() {
 	defer log.Sync()
 
@@ -198,7 +232,10 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
+	// Add recovery middleware
 	r.Use(gin.Recovery())
+	// Add logging middleware
+	r.Use(LoggerMiddleware(log))
 
 	h := NewHandler(log)
 
@@ -214,6 +251,8 @@ func main() {
 	if port == "" {
 		port = "19981"
 	}
+
+	log.Info("Server starting", zap.String("port", port))
 
 	// Start server
 	if err := r.Run(":" + port); err != nil {
