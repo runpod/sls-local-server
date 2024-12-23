@@ -1,7 +1,7 @@
 set -e
 
 # Start dockerd in the background
-./main
+./main &
 
 sleep 5
 
