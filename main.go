@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -53,6 +54,20 @@ var (
 	currentTest int = -1
 )
 
+func Marshal(t interface{}) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(t)
+	return buffer.Bytes(), err
+}
+
+func JSON(c *gin.Context, code int, obj interface{}) {
+	c.Header("Content-Type", "application/json")
+	jsonStr, _ := Marshal(obj)
+	c.String(code, string(jsonStr))
+}
+
 func init() {
 	// Initialize logger
 	var err error
@@ -93,40 +108,29 @@ func (h *Handler) Health(c *gin.Context) {
 	})
 }
 
-// RunInference handles the main inference request
-func (h *Handler) RunInference(c *gin.Context) {
-	var request struct {
-		Input map[string]interface{} `json:"input"`
-	}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		h.log.Error("Failed to parse request", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request format",
-		})
-		return
-	}
-
-	// TODO: Add your inference logic here
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"output": request.Input,
-	})
-}
-
 // GetStatus returns the status of a job
 func (h *Handler) JobTake(c *gin.Context) {
 	h.log.Info("Job take", zap.Int("current_test", currentTest))
 
 	currentTest++
+
+	if currentTest >= len(testConfig) {
+		time.Sleep(time.Duration(10) * time.Second)
+		h.log.Error("No more tests", zap.Int("current_test", currentTest))
+		c.JSON(500, gin.H{
+			"error": "No more tests",
+		})
+		return
+	}
+
 	nextTestPayload := testConfig[currentTest]
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
 
-	c.JSON(http.StatusOK, gin.H{
+	JSON(c, 200, gin.H{
 		"delayTime":     0,
 		"error":         "",
 		"executionTime": nextTestPayload.Timeout,
-		"id":            currentTest,
+		"id":            fmt.Sprintf("%d", currentTest),
 		"input":         nextTestPayload.Input,
 		"retries":       0,
 		"status":        200,
@@ -135,38 +139,51 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 // CancelJob cancels a running job
 func (h *Handler) JobDone(c *gin.Context) {
-	jobID := c.Param("id")
+	// jobID := c.Param("id")
 
-	h.log.Info("Job done", zap.String("job_id", jobID))
-	id, err := strconv.Atoi(jobID)
-	if err != nil {
-		h.log.Error("Failed to parse job ID", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid job ID",
-		})
-		return
-	}
+	// h.log.Info("Job done", zap.String("job_id", jobID))
+	// id, err := strconv.Atoi(jobID)
+	// if err != nil {
+	// 	h.log.Error("Failed to parse job ID", zap.Error(err))
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"error": "Invalid job ID",
+	// 	})
+	// 	return
+	// }
 
-	// Get test case for this job ID
-	if id >= len(testConfig) {
-		h.log.Error("Job ID out of range", zap.Int("id", id))
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid job ID",
-		})
-		return
-	}
+	// // Get test case for this job ID
+	// if id >= len(testConfig) {
+	// 	h.log.Error("Job ID out of range. Sleeping for 30 seconds.", zap.Int("id", id))
+	// 	time.Sleep(time.Duration(30) * time.Second)
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"error": "Invalid job ID",
+	// 	})
+	// 	return
+	// }
 
-	test := testConfig[id]
-	var result interface{}
-	if err := c.BindJSON(&result); err != nil {
+	// test := testConfig[id]
+	// var result interface{}
+	// if err := c.BindJSON(&result); err != nil {
+	// 	h.log.Error("Failed to parse request body", zap.Error(err))
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"error": "Invalid request body",
+	// 	})
+	// 	return
+	// }
+
+	var payload map[string]interface{}
+	if err := c.BindJSON(&payload); err != nil {
 		h.log.Error("Failed to parse request body", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid request body",
 		})
 		return
 	}
+	h.log.Info("Job done payload", zap.Any("payload", payload))
 
-	h.log.Info("Job done", zap.Any("actual result", result), zap.Any("expected result", test))
+	// h.log.Info("Job done", zap.Any("actual result", result), zap.Any("expected result", test))
+
+	// time.Sleep(time.Duration(30) * time.Second)
 
 	// Compare results
 	// testResult := Results{
@@ -185,7 +202,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 
 	// TODO: Implement job cancellation logic
 	c.JSON(http.StatusOK, gin.H{
-		"id":      jobID,
+		// "id":      jobID,
 		"status":  "cancelled",
 		"message": "Job successfully cancelled",
 	})
@@ -197,7 +214,7 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
-		
+
 		// Log request
 		logger.Info("Incoming request",
 			zap.String("path", path),
@@ -212,14 +229,9 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 
 		// Log response
 		latency := time.Since(start)
-		status := c.Writer.Status()
-		
+
 		logger.Info("Request completed",
-			zap.String("path", path),
-			zap.Int("status", status),
 			zap.Duration("latency", latency),
-			zap.Int("body_size", c.Writer.Size()),
-			zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
 		)
 	}
 }
