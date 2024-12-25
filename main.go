@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,29 +15,34 @@ import (
 	"go.uber.org/zap"
 )
 
+var mutex = &sync.Mutex{}
+
 type Test struct {
 	ID             int               `json:"id,omitempty"`
 	Name           string            `json:"name"`
 	Input          map[string]string `json:"input"`
-	ExpectedOutput interface{}       `json:"expected_output"`
+	ExpectedOutput ExpectedOutput    `json:"expected_output"`
 	ExpectedStatus int               `json:"expected_status"`
 	Timeout        int               `json:"timeout"`
+	StartedAt      time.Time         `json:"started_at,omitempty"`
+	Completed      bool              `json:"completed,omitempty"`
 }
 
-type Results struct {
-	ID     int `json:"id"`
-	Status int `json:"status"`
+type ExpectedOutput struct {
+	Payload interface{} `json:"payload"`
+	Error   string      `json:"error"`
+}
 
-	ExpectedStatus int `json:"expected_status"`
-	ActualStatus   int `json:"actual_status"`
+type Result struct {
+	ID     int    `json:"id"`
+	Status string `json:"status"`
 
 	ExpectedOutput interface{} `json:"expected_output"`
 	ActualOutput   interface{} `json:"actual_output"`
 
-	Timeout        int `json:"timeout"`
-	ActualDuration int `json:"actual_duration"`
-
-	Error string `json:"error"`
+	ExpectedError string `json:"expected_error"`
+	ActualError   string `json:"actual_error"`
+	ExecutionTime int    `json:"execution_time"`
 }
 
 type Handler struct {
@@ -52,6 +59,7 @@ var (
 	testConfig  []Test
 	log         *zap.Logger
 	currentTest int = -1
+	results     []Result
 )
 
 func Marshal(t interface{}) ([]byte, error) {
@@ -108,6 +116,79 @@ func (h *Handler) Health(c *gin.Context) {
 	})
 }
 
+func sendResultsToGraphQL() {
+	runpodPodId := os.Getenv("RUNPOD_POD_ID")
+	runpodAiApiId := os.Getenv("RUNPOD_ENDPOINT_ID")
+	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
+	runpodTestId := os.Getenv("RUNPOD_TEST_ID")
+
+	webhookUrl := os.Getenv("RUNPOD_TEST_WEBHOOK_URL")
+	if webhookUrl == "" {
+		log.Error("RUNPOD_TEST_WEBHOOK_URL not set")
+		return
+	}
+
+	// Convert results to JSON
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"podId":      runpodPodId,
+		"endpointId": runpodAiApiId,
+		"testId":     runpodTestId,
+		"results":    results,
+	})
+	if err != nil {
+		log.Error("Failed to marshal results", zap.Error(err))
+		return
+	}
+
+	// Create request
+	req, err := http.NewRequest("POST", webhookUrl, bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Error("Failed to create request", zap.Error(err))
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+jwtToken)
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error("Failed to send request", zap.Error(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Error("Request failed", zap.Int("status", resp.StatusCode))
+		return
+	}
+
+	log.Info("Results sent to GraphQL", zap.Any("results", results))
+}
+
+func cancelJob(timeout int, jobIndex int) {
+	time.Sleep(time.Duration(timeout) * time.Second)
+
+	mutex.Lock()
+	defer mutex.Unlock()
+	if testConfig[jobIndex].Completed {
+		return
+	}
+
+	// send a request to graphql with the job index and execution timeout result
+	results = append(results, Result{
+		ID:            jobIndex,
+		Status:        "FAILED",
+		ActualOutput:  nil,
+		ExpectedError: "",
+		ActualError:   "Execution timeout",
+		ExecutionTime: int(time.Since(testConfig[jobIndex].StartedAt).Seconds()),
+	})
+
+	sendResultsToGraphQL()
+}
+
 // GetStatus returns the status of a job
 func (h *Handler) JobTake(c *gin.Context) {
 	h.log.Info("Job take", zap.Int("current_test", currentTest))
@@ -115,16 +196,22 @@ func (h *Handler) JobTake(c *gin.Context) {
 	currentTest++
 
 	if currentTest >= len(testConfig) {
+		sendResultsToGraphQL()
 		time.Sleep(time.Duration(10) * time.Second)
 		h.log.Error("No more tests", zap.Int("current_test", currentTest))
+
 		c.JSON(500, gin.H{
 			"error": "No more tests",
 		})
+
 		return
 	}
 
 	nextTestPayload := testConfig[currentTest]
+	nextTestPayload.StartedAt = time.Now()
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
+
+	go cancelJob(nextTestPayload.Timeout, currentTest)
 
 	JSON(c, 200, gin.H{
 		"delayTime":     0,
@@ -139,37 +226,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 // CancelJob cancels a running job
 func (h *Handler) JobDone(c *gin.Context) {
-	// jobID := c.Param("id")
-
-	// h.log.Info("Job done", zap.String("job_id", jobID))
-	// id, err := strconv.Atoi(jobID)
-	// if err != nil {
-	// 	h.log.Error("Failed to parse job ID", zap.Error(err))
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "Invalid job ID",
-	// 	})
-	// 	return
-	// }
-
-	// // Get test case for this job ID
-	// if id >= len(testConfig) {
-	// 	h.log.Error("Job ID out of range. Sleeping for 30 seconds.", zap.Int("id", id))
-	// 	time.Sleep(time.Duration(30) * time.Second)
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "Invalid job ID",
-	// 	})
-	// 	return
-	// }
-
-	// test := testConfig[id]
-	// var result interface{}
-	// if err := c.BindJSON(&result); err != nil {
-	// 	h.log.Error("Failed to parse request body", zap.Error(err))
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "Invalid request body",
-	// 	})
-	// 	return
-	// }
+	lastTest := testConfig[currentTest]
 
 	var payload map[string]interface{}
 	if err := c.BindJSON(&payload); err != nil {
@@ -181,28 +238,41 @@ func (h *Handler) JobDone(c *gin.Context) {
 	}
 	h.log.Info("Job done payload", zap.Any("payload", payload))
 
-	// h.log.Info("Job done", zap.Any("actual result", result), zap.Any("expected result", test))
+	actualOutput, ok := payload["output"]
+	if !ok {
+		h.log.Error("Output not found in payload", zap.Any("payload", payload))
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Output not found in payload",
+		})
+		return
+	}
 
-	// time.Sleep(time.Duration(30) * time.Second)
+	if !reflect.DeepEqual(lastTest.ExpectedOutput.Payload, actualOutput) {
+		results = append(results, Result{
+			ID:             currentTest,
+			ExpectedOutput: lastTest.ExpectedOutput.Payload,
+			ActualOutput:   actualOutput,
+			ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
+			Status:         "FAILED",
+		})
 
-	// Compare results
-	// testResult := Results{
-	// 	ID:             id,
-	// 	ExpectedStatus: test.ExpectedStatus,
-	// 	ActualStatus:   int(result["status"].(float64)),
-	// 	ExpectedOutput: test.ExpectedOutput,
-	// 	ActualOutput:   result["output"],
-	// 	Timeout:        test.Timeout,
-	// 	ActualDuration: int(result["executionTime"].(float64)),
-	// }
+		sendResultsToGraphQL()
+		h.log.Error("Expected output does not match actual output", zap.Any("expected", lastTest.ExpectedOutput), zap.Any("actual", actualOutput))
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Expected output does not match actual output",
+		})
+		return
+	}
 
-	// if err, ok := result["error"]; ok {
-	// 	testResult.Error = err.(string)
-	// }
+	results = append(results, Result{
+		ID:             currentTest,
+		ExpectedOutput: lastTest.ExpectedOutput.Payload,
+		ActualOutput:   actualOutput,
+		ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
+		Status:         "SUCCESS",
+	})
 
-	// TODO: Implement job cancellation logic
 	c.JSON(http.StatusOK, gin.H{
-		// "id":      jobID,
 		"status":  "cancelled",
 		"message": "Job successfully cancelled",
 	})
