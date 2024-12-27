@@ -1,30 +1,51 @@
-[
-      {
-        "name": "validation_text_input",
-        "input": {
-          "text": "Hello world",
-          "language": "en"
-        },
-        "expected_output": {
-          "payload": {
-            "text": "Hello world",
-            "language": "en"
-          },
-          "error": ""
-        }
+{
+  "tests": [
+    {
+      "name": "validation_text_input",
+      "input": {
+        "text": "Hello world",
+        "language": "en"
       },
-      {
-        "name": "validation_text_input",
-        "input": {
+      "expected_output": {
+        "payload": {
           "text": "Hello world",
           "language": "en"
         },
-        "expected_output": {
-          "payload": {
-            "text": "Hello world",
-            "language": "en"
-          },
-          "error": ""
-        }
+        "error": ""
       }
-]
+    },
+    {
+      "name": "validation_text_input",
+      "input": {
+        "text": "Hello world",
+        "language": "en"
+      },
+      "expected_output": {
+        "payload": {
+          "text": "Hello world",
+          "language": "en"
+        },
+        "error": ""
+      }
+    }
+  ],
+  "config": {
+    "gpuTypeId": "AMPERE_16,AMPERE_24,ADA_24,AMPERE_48,ADA_48_PRO,AMPERE_80,ADA_80_PRO",
+    "gpuCount": 1,
+    "env": [{
+      "key": "ENV_KEY_HERE",
+      "value": "ENV_VALUE_HERE"
+    }],
+    "allowedCudaVersions": [
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1",
+      "12.0",
+      "11.7"
+    ]
+  }
+}
