@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/gin-gonic/gin"
 	prettyconsole "github.com/thessem/zap-prettyconsole"
 	"go.uber.org/zap"
@@ -90,15 +92,10 @@ func init() {
 
 	log.Info(os.Getenv("RUNPOD_TEST"))
 	if os.Getenv("RUNPOD_TEST") == "true" {
-		testFilePath := os.Getenv("RUNPOD_TEST_FILE")
-		data, err := os.ReadFile(testFilePath)
-		if err != nil {
-			log.Fatal("Failed to read runpod.tests.json",
-				zap.Error(err))
-		}
+		tests := os.Getenv("RUNPOD_TESTS")
 
 		// Parse JSON into testConfig
-		if err := json.Unmarshal(data, &testConfig); err != nil {
+		if err := json.Unmarshal([]byte(tests), &testConfig); err != nil {
 			log.Fatal("Failed to parse runpod.tests.json",
 				zap.Error(err))
 		}
@@ -306,9 +303,29 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
+type CLI struct {
+	// This field will read from the environment variable "API_KEY"
+	// If an environment variable isn't set, it will default to "default-api-key".
+	Command string `help:"Command to run." env:"COMMAND" default:"python3 handler.py"`
+}
+
 func main() {
 	defer log.Sync()
+	var cli CLI
 
+	kong.Parse(&cli)
+	go func() {
+		runCommand(cli.Command)
+	}()
+	RunServer()
+}
+
+func runCommand(command string) {
+	cmd := exec.Command(command)
+	cmd.Start()
+}
+
+func RunServer() {
 	log.Info("Starting server")
 
 	gin.SetMode(gin.ReleaseMode)

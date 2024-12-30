@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/Code-Hex/dd v1.1.0 // indirect
+	github.com/alecthomas/kong v1.6.0 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect

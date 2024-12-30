@@ -5,4 +5,4 @@ set -e
 
 sleep 5
 
-RUNPOD_ENDPOINT_BASE_URL=http://localhost:19981/v2 python3 handler.py
+python3 handler.py
