@@ -22,6 +22,7 @@ jobs:
           cache: true
 
       - run: go build -ldflags="-X 'sls-local-server/main.Version=$(github.ref_name)'" -o sls-local-server main.go
+      - run: echo $(github.ref_name) > version.txt
 
       - name: Configure AWS credentials
         if: endsWith(github.ref_name, '-dev')
@@ -35,3 +36,4 @@ jobs:
         if: endsWith(github.ref_name, '-dev')
         run: |
           aws s3 cp sls-local-server s3://rutvik-test-script/
+          aws s3 cp version.txt s3://rutvik-test-script/
