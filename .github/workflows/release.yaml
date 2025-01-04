@@ -21,10 +21,10 @@ jobs:
           go-version: '1.22'
           cache: true
 
-      - run: go build -ldflags="-X 'sls-local-server/main.Version=$(github.ref_name)'" -o sls-local-server main.go
+      - run: go build -ldflags="-X 'sls-local-server/main.Version=${{ github.ref_name }}'" -o sls-local-server main.go
         name: Build
 
-      - run: echo $(github.ref_name) > version.txt
+      - run: echo ${{github.ref_name}} > version.txt
         name: Set version file
 
       - name: Configure AWS credentials
