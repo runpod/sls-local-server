@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alecthomas/kong"
 	"github.com/gin-gonic/gin"
 	prettyconsole "github.com/thessem/zap-prettyconsole"
 	"go.uber.org/zap"
@@ -37,6 +37,7 @@ type ExpectedOutput struct {
 
 type Result struct {
 	ID     int    `json:"id"`
+	Name   string `json:"name,omitempty"`
 	Status string `json:"status"`
 
 	ExpectedOutput interface{} `json:"expected_output"`
@@ -96,7 +97,7 @@ func init() {
 
 		// Parse JSON into testConfig
 		if err := json.Unmarshal([]byte(tests), &testConfig); err != nil {
-			log.Fatal("Failed to parse runpod.tests.json",
+			log.Fatal("Failed to parse runpod tests",
 				zap.Error(err))
 		}
 
@@ -113,9 +114,8 @@ func (h *Handler) Health(c *gin.Context) {
 	})
 }
 
-func sendResultsToGraphQL() {
+func sendResultsToGraphQL(status string, errorReason *string) {
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
-	runpodAiApiId := os.Getenv("RUNPOD_ENDPOINT_ID")
 	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
 	runpodTestId := os.Getenv("RUNPOD_TEST_ID")
 
@@ -127,10 +127,11 @@ func sendResultsToGraphQL() {
 
 	// Convert results to JSON
 	jsonData, err := json.Marshal(map[string]interface{}{
-		"podId":      runpodPodId,
-		"endpointId": runpodAiApiId,
-		"testId":     runpodTestId,
-		"results":    results,
+		"podId":   runpodPodId,
+		"testId":  runpodTestId,
+		"results": results,
+		"status":  status,
+		"error":   errorReason,
 	})
 	if err != nil {
 		log.Error("Failed to marshal results", zap.Error(err))
@@ -161,6 +162,8 @@ func sendResultsToGraphQL() {
 		return
 	}
 
+	time.Sleep(time.Duration(10) * time.Second)
+
 	log.Info("Results sent to GraphQL", zap.Any("results", results))
 }
 
@@ -183,7 +186,7 @@ func cancelJob(timeout int, jobIndex int) {
 		ExecutionTime: int(time.Since(testConfig[jobIndex].StartedAt).Seconds()),
 	})
 
-	sendResultsToGraphQL()
+	sendResultsToGraphQL("COMPLETED", nil)
 }
 
 // GetStatus returns the status of a job
@@ -193,7 +196,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 	currentTest++
 
 	if currentTest >= len(testConfig) {
-		sendResultsToGraphQL()
+		sendResultsToGraphQL("COMPLETED", nil)
 		time.Sleep(time.Duration(10) * time.Second)
 		h.log.Error("No more tests", zap.Int("current_test", currentTest))
 
@@ -247,13 +250,14 @@ func (h *Handler) JobDone(c *gin.Context) {
 	if !reflect.DeepEqual(lastTest.ExpectedOutput.Payload, actualOutput) {
 		results = append(results, Result{
 			ID:             currentTest,
+			Name:           lastTest.Name,
 			ExpectedOutput: lastTest.ExpectedOutput.Payload,
 			ActualOutput:   actualOutput,
 			ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
 			Status:         "FAILED",
 		})
 
-		sendResultsToGraphQL()
+		sendResultsToGraphQL("COMPLETED", nil)
 		h.log.Error("Expected output does not match actual output", zap.Any("expected", lastTest.ExpectedOutput), zap.Any("actual", actualOutput))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Expected output does not match actual output",
@@ -263,11 +267,13 @@ func (h *Handler) JobDone(c *gin.Context) {
 
 	results = append(results, Result{
 		ID:             currentTest,
+		Name:           lastTest.Name,
 		ExpectedOutput: lastTest.ExpectedOutput.Payload,
 		ActualOutput:   actualOutput,
 		ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
 		Status:         "SUCCESS",
 	})
+	lastTest.Completed = true
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "cancelled",
@@ -303,26 +309,25 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-type CLI struct {
-	// This field will read from the environment variable "API_KEY"
-	// If an environment variable isn't set, it will default to "default-api-key".
-	Command string `help:"Command to run." env:"COMMAND" default:"python3 handler.py"`
-}
-
 func main() {
 	defer log.Sync()
-	var cli CLI
+	command := flag.String("command", "python3 handler.py", "the user command to run")
 
-	kong.Parse(&cli)
 	go func() {
-		runCommand(cli.Command)
+		runCommand(*command)
 	}()
 	RunServer()
 }
 
 func runCommand(command string) {
-	cmd := exec.Command(command)
-	cmd.Start()
+	log.Info("Running command", zap.String("command", command))
+	cmd := exec.Command("sh", "-c", command)
+	err := cmd.Start()
+	if err != nil {
+		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
+		sendResultsToGraphQL("FAILED", &errorMsg)
+		log.Fatal("Failed to start command", zap.Error(err))
+	}
 }
 
 func RunServer() {
@@ -355,6 +360,8 @@ func RunServer() {
 
 	// Start server
 	if err := r.Run(":" + port); err != nil {
+		errorMsg := "Failed to start tests. Please push your changes again!"
+		sendResultsToGraphQL("FAILED", &errorMsg)
 		log.Fatal("Failed to start server", zap.Error(err))
 	}
 }
