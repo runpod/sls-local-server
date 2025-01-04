@@ -18,6 +18,7 @@ import (
 )
 
 var mutex = &sync.Mutex{}
+var Version = "dev"
 
 type Test struct {
 	ID             int               `json:"id,omitempty"`
@@ -91,7 +92,6 @@ func init() {
 		}
 	}
 
-	log.Info(os.Getenv("RUNPOD_TEST"))
 	if os.Getenv("RUNPOD_TEST") == "true" {
 		tests := os.Getenv("RUNPOD_TESTS")
 
@@ -309,16 +309,6 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-func main() {
-	defer log.Sync()
-	command := flag.String("command", "python3 handler.py", "the user command to run")
-
-	go func() {
-		runCommand(*command)
-	}()
-	RunServer()
-}
-
 func runCommand(command string) {
 	log.Info("Running command", zap.String("command", command))
 	cmd := exec.Command("sh", "-c", command)
@@ -364,4 +354,22 @@ func RunServer() {
 		sendResultsToGraphQL("FAILED", &errorMsg)
 		log.Fatal("Failed to start server", zap.Error(err))
 	}
+}
+
+func main() {
+	command := flag.String("command", "python3 handler.py", "the user command to run")
+	check := flag.String("check", "null", "the version of the server to run")
+
+	flag.Parse()
+
+	if check != nil && *check == "version" {
+		fmt.Println(Version)
+		return
+	}
+	defer log.Sync()
+
+	go func() {
+		runCommand(*command)
+	}()
+	RunServer()
 }

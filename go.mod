@@ -1,15 +1,15 @@
-module github.com/runpod/sls-local-server
+module sls-local-server
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/thessem/zap-prettyconsole v0.5.2
 	go.uber.org/zap v1.27.0
 )
 
 require (
 	github.com/Code-Hex/dd v1.1.0 // indirect
-	github.com/alecthomas/kong v1.6.0 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
@@ -28,7 +28,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/thessem/zap-prettyconsole v0.5.2 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
