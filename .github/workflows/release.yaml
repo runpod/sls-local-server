@@ -21,7 +21,7 @@ jobs:
           go-version: '1.22'
           cache: true
 
-      - run: go build -ldflags="-X 'sls-local-server/main.Version=$(github.ref_name)'" -o main main.go
+      - run: go build -ldflags="-X 'sls-local-server/main.Version=$(github.ref_name)'" -o sls-local-server main.go
 
       - name: Configure AWS credentials
         if: endsWith(github.ref_name, '-dev')
@@ -34,4 +34,4 @@ jobs:
       - name: Upload to AWS if dev tag
         if: endsWith(github.ref_name, '-dev')
         run: |
-          aws s3 cp dev-sls-local-server s3://rutvik-test-script/
+          aws s3 cp sls-local-server s3://rutvik-test-script/
