@@ -162,7 +162,7 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 		return
 	}
 
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 
 	log.Info("Results sent to GraphQL", zap.Any("results", results))
 }
