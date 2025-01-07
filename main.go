@@ -104,6 +104,9 @@ func init() {
 		log.Info("Parsed test config", zap.Any("testConfig", testConfig))
 		for i, test := range testConfig {
 			test.ID = i
+			if test.Timeout == 0 {
+				test.Timeout = 300
+			}
 		}
 	}
 }
@@ -197,7 +200,6 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 	if currentTest >= len(testConfig) {
 		sendResultsToGraphQL("COMPLETED", nil)
-		time.Sleep(time.Duration(10) * time.Second)
 		h.log.Error("No more tests", zap.Int("current_test", currentTest))
 
 		c.JSON(500, gin.H{
