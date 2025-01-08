@@ -105,7 +105,8 @@ func init() {
 		for i, test := range testConfig {
 			test.ID = &i
 			if test.Timeout == nil {
-				*test.Timeout = 300
+				threeHundred := 300
+				test.Timeout = &threeHundred
 			}
 		}
 	}
