@@ -43,12 +43,12 @@ type Result struct {
 	Name   string `json:"name,omitempty"`
 	Status string `json:"status"`
 
-	ExpectedOutput interface{} `json:"expected_output"`
-	ActualOutput   interface{} `json:"actual_output"`
+	ExpectedOutput interface{} `json:"expectedOutput"`
+	ActualOutput   interface{} `json:"actualOutput"`
 
-	ExpectedError string `json:"expected_error"`
-	ActualError   string `json:"actual_error"`
-	ExecutionTime int    `json:"execution_time"`
+	ExpectedError string `json:"expectedError"`
+	ActualError   string `json:"actualError"`
+	ExecutionTime int    `json:"executionTime"`
 }
 
 type Handler struct {
