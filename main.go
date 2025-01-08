@@ -186,7 +186,7 @@ func cancelJob(timeout int, jobIndex int) {
 		ActualOutput:  nil,
 		ExpectedError: "",
 		ActualError:   "Execution timeout",
-		ExecutionTime: int(time.Since(testConfig[jobIndex].StartedAt).Seconds()),
+		ExecutionTime: int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds() / 1000),
 	})
 
 	sendResultsToGraphQL("COMPLETED", nil)
@@ -210,7 +210,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 	}
 
 	nextTestPayload := testConfig[currentTest]
-	nextTestPayload.StartedAt = time.Now()
+	nextTestPayload.StartedAt = time.Now().UTC()
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
 
 	go cancelJob(*nextTestPayload.Timeout, currentTest)
@@ -251,7 +251,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 
 	if !reflect.DeepEqual(lastTest.ExpectedOutput.Payload, actualOutput) {
 		results = append(results, Result{
-			ID:             currentTest,
+			ID:             *lastTest.ID,
 			Name:           lastTest.Name,
 			ExpectedOutput: lastTest.ExpectedOutput.Payload,
 			ActualOutput:   actualOutput,
@@ -275,7 +275,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 		ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
 		Status:         "SUCCESS",
 	})
-	lastTest.Completed = true
+	testConfig[currentTest].Completed = true
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "cancelled",
