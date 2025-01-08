@@ -21,12 +21,12 @@ var mutex = &sync.Mutex{}
 var Version = "dev"
 
 type Test struct {
-	ID             int               `json:"id,omitempty"`
+	ID             *int              `json:"id,omitempty"`
 	Name           string            `json:"name"`
 	Input          map[string]string `json:"input"`
 	ExpectedOutput ExpectedOutput    `json:"expected_output"`
 	ExpectedStatus int               `json:"expected_status"`
-	Timeout        int               `json:"timeout"`
+	Timeout        *int              `json:"timeout"`
 	StartedAt      time.Time         `json:"started_at,omitempty"`
 	Completed      bool              `json:"completed,omitempty"`
 }
@@ -103,9 +103,9 @@ func init() {
 
 		log.Info("Parsed test config", zap.Any("testConfig", testConfig))
 		for i, test := range testConfig {
-			test.ID = i
-			if test.Timeout == 0 {
-				test.Timeout = 300
+			test.ID = &i
+			if test.Timeout == nil {
+				*test.Timeout = 300
 			}
 		}
 	}
@@ -213,7 +213,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 	nextTestPayload.StartedAt = time.Now()
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
 
-	go cancelJob(nextTestPayload.Timeout, currentTest)
+	go cancelJob(*nextTestPayload.Timeout, currentTest)
 
 	JSON(c, 200, gin.H{
 		"delayTime":     0,
