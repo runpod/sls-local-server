@@ -26,9 +26,11 @@ type Test struct {
 	Input          map[string]string `json:"input"`
 	ExpectedOutput ExpectedOutput    `json:"expected_output"`
 	ExpectedStatus int               `json:"expected_status"`
-	Timeout        *int              `json:"timeout"`
-	StartedAt      time.Time         `json:"started_at,omitempty"`
-	Completed      bool              `json:"completed,omitempty"`
+
+	Timeout *int `json:"timeout"`
+
+	StartedAt time.Time `json:"started_at,omitempty"`
+	Completed bool      `json:"completed,omitempty"`
 }
 
 type ExpectedOutput struct {
@@ -60,10 +62,10 @@ func NewHandler(log *zap.Logger) *Handler {
 }
 
 var (
-	testConfig  []Test
-	log         *zap.Logger
-	currentTest int = -1
-	results     []Result
+	testConfig     []Test
+	log            *zap.Logger
+	currentTestPtr int = -1
+	results        []Result
 )
 
 func Marshal(t interface{}) ([]byte, error) {
@@ -103,12 +105,16 @@ func init() {
 
 		log.Info("Parsed test config", zap.Any("testConfig", testConfig))
 		for i, test := range testConfig {
-			test.ID = &i
+			testConfig[i] = test
+			testConfig[i].ID = &i
 			if test.Timeout == nil {
 				threeHundred := 300
-				test.Timeout = &threeHundred
+				testConfig[i].Timeout = &threeHundred
 			}
 		}
+	} else {
+		errorMsg := "No tests found."
+		sendResultsToGraphQL("FAILED", &errorMsg)
 	}
 }
 
@@ -197,13 +203,13 @@ func cancelJob(timeout int, jobIndex int) {
 
 // GetStatus returns the status of a job
 func (h *Handler) JobTake(c *gin.Context) {
-	h.log.Info("Job take", zap.Int("current_test", currentTest))
+	h.log.Info("Job take", zap.Int("current_test", currentTestPtr))
 
-	currentTest++
+	currentTestPtr++
 
-	if currentTest >= len(testConfig) {
+	if currentTestPtr >= len(testConfig) {
 		sendResultsToGraphQL("PASSED", nil)
-		h.log.Error("No more tests", zap.Int("current_test", currentTest))
+		h.log.Error("No more tests", zap.Int("current_test", currentTestPtr))
 
 		c.JSON(500, gin.H{
 			"error": "No more tests",
@@ -212,17 +218,17 @@ func (h *Handler) JobTake(c *gin.Context) {
 		return
 	}
 
-	nextTestPayload := testConfig[currentTest]
-	testConfig[currentTest].StartedAt = time.Now().UTC()
+	nextTestPayload := testConfig[currentTestPtr]
+	testConfig[currentTestPtr].StartedAt = time.Now().UTC()
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
 
-	go cancelJob(*nextTestPayload.Timeout, currentTest)
+	go cancelJob(*nextTestPayload.Timeout, currentTestPtr)
 
 	JSON(c, 200, gin.H{
 		"delayTime":     0,
 		"error":         "",
 		"executionTime": nextTestPayload.Timeout,
-		"id":            fmt.Sprintf("%d", currentTest),
+		"id":            fmt.Sprintf("%d", currentTestPtr),
 		"input":         nextTestPayload.Input,
 		"retries":       0,
 		"status":        200,
@@ -231,7 +237,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 // CancelJob cancels a running job
 func (h *Handler) JobDone(c *gin.Context) {
-	lastTest := testConfig[currentTest]
+	lastTest := testConfig[currentTestPtr]
 
 	var payload map[string]interface{}
 	if err := c.BindJSON(&payload); err != nil {
@@ -271,14 +277,14 @@ func (h *Handler) JobDone(c *gin.Context) {
 	}
 
 	results = append(results, Result{
-		ID:             currentTest,
+		ID:             currentTestPtr,
 		Name:           lastTest.Name,
 		ExpectedOutput: lastTest.ExpectedOutput.Payload,
 		ActualOutput:   actualOutput,
 		ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
 		Status:         "SUCCESS",
 	})
-	testConfig[currentTest].Completed = true
+	testConfig[currentTestPtr].Completed = true
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "cancelled",
