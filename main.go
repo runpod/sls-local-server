@@ -192,7 +192,7 @@ func cancelJob(timeout int, jobIndex int) {
 		ExecutionTime:  int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds() / 1000),
 	})
 
-	sendResultsToGraphQL("COMPLETED", nil)
+	sendResultsToGraphQL("FAILED", nil)
 }
 
 // GetStatus returns the status of a job
@@ -202,7 +202,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 	currentTest++
 
 	if currentTest >= len(testConfig) {
-		sendResultsToGraphQL("COMPLETED", nil)
+		sendResultsToGraphQL("PASSED", nil)
 		h.log.Error("No more tests", zap.Int("current_test", currentTest))
 
 		c.JSON(500, gin.H{
@@ -262,7 +262,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 			Status:         "FAILED",
 		})
 
-		sendResultsToGraphQL("COMPLETED", nil)
+		sendResultsToGraphQL("FAILED", nil)
 		h.log.Error("Expected output does not match actual output", zap.Any("expected", lastTest.ExpectedOutput), zap.Any("actual", actualOutput))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Expected output does not match actual output",
