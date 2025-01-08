@@ -181,12 +181,14 @@ func cancelJob(timeout int, jobIndex int) {
 
 	// send a request to graphql with the job index and execution timeout result
 	results = append(results, Result{
-		ID:            jobIndex,
-		Status:        "FAILED",
-		ActualOutput:  nil,
-		ExpectedError: "",
-		ActualError:   "Execution timeout",
-		ExecutionTime: int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds() / 1000),
+		ID:             *testConfig[jobIndex].ID,
+		Name:           testConfig[jobIndex].Name,
+		Status:         "FAILED",
+		ExpectedOutput: testConfig[jobIndex].ExpectedOutput.Payload,
+		ActualOutput:   nil,
+		ExpectedError:  "",
+		ActualError:    "Execution timeout exceeded",
+		ExecutionTime:  int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds() / 1000),
 	})
 
 	sendResultsToGraphQL("COMPLETED", nil)
@@ -210,7 +212,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 	}
 
 	nextTestPayload := testConfig[currentTest]
-	nextTestPayload.StartedAt = time.Now().UTC()
+	testConfig[currentTest].StartedAt = time.Now().UTC()
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
 
 	go cancelJob(*nextTestPayload.Timeout, currentTest)
