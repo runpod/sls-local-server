@@ -207,17 +207,6 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 	currentTestPtr++
 
-	if currentTestPtr >= len(testConfig) {
-		sendResultsToGraphQL("PASSED", nil)
-		h.log.Error("No more tests", zap.Int("current_test", currentTestPtr))
-
-		c.JSON(500, gin.H{
-			"error": "No more tests",
-		})
-
-		return
-	}
-
 	nextTestPayload := testConfig[currentTestPtr]
 	testConfig[currentTestPtr].StartedAt = time.Now().UTC()
 	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
@@ -235,7 +224,6 @@ func (h *Handler) JobTake(c *gin.Context) {
 	})
 }
 
-// CancelJob cancels a running job
 func (h *Handler) JobDone(c *gin.Context) {
 	lastTest := testConfig[currentTestPtr]
 
@@ -285,6 +273,11 @@ func (h *Handler) JobDone(c *gin.Context) {
 		Status:         "SUCCESS",
 	})
 	testConfig[currentTestPtr].Completed = true
+
+	if currentTestPtr == len(testConfig)-1 {
+		sendResultsToGraphQL("PASSED", nil)
+		h.log.Error("No more tests", zap.Int("current_test", currentTestPtr))
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "cancelled",
