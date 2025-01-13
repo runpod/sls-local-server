@@ -51,7 +51,7 @@ type Result struct {
 
 	ExpectedError string `json:"expectedError"`
 	ActualError   string `json:"actualError"`
-	ExecutionTime int    `json:"executionTime"`
+	ExecutionTime int64  `json:"executionTime"`
 }
 
 type Handler struct {
@@ -257,7 +257,7 @@ func cancelJob(timeout int, jobIndex int) {
 		ActualOutput:   nil,
 		ExpectedError:  "",
 		ActualError:    "Execution timeout exceeded",
-		ExecutionTime:  int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds()),
+		ExecutionTime:  time.Since(testConfig[jobIndex].StartedAt).Milliseconds(),
 		Mode:           *testConfig[jobIndex].Mode,
 	})
 
@@ -316,7 +316,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 			Name:           lastTest.Name,
 			ExpectedOutput: lastTest.ExpectedOutput.Payload,
 			ActualOutput:   actualOutput,
-			ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
+			ExecutionTime:  time.Since(lastTest.StartedAt).Milliseconds(),
 			Status:         "FAILED",
 			Mode:           *lastTest.Mode,
 		})
@@ -334,7 +334,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 		Name:           lastTest.Name,
 		ExpectedOutput: lastTest.ExpectedOutput.Payload,
 		ActualOutput:   actualOutput,
-		ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
+		ExecutionTime:  time.Since(lastTest.StartedAt).Milliseconds(),
 		Status:         "SUCCESS",
 		Mode:           *lastTest.Mode,
 	})
