@@ -18,6 +18,7 @@
     {
       "name": "validation_text_input",
       "mode": "COMPARE_OUTPUTS_SIMILARITY_WITH_LLM",
+      "llmSimilarityThreshold": 0.8,
       "input": {
         "text": "Hello world",
         "language": "en"

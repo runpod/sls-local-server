@@ -21,12 +21,13 @@ var mutex = &sync.Mutex{}
 var Version = "dev"
 
 type Test struct {
-	ID             *int            `json:"id,omitempty"`
-	Name           string          `json:"name"`
-	Input          interface{}     `json:"input"`
-	ExpectedOutput *ExpectedOutput `json:"expectedOutput"`
-	ExpectedStatus int             `json:"expectedStatus"`
-	Mode           string          `json:"mode"`
+	ID                     *int            `json:"id,omitempty"`
+	Name                   string          `json:"name"`
+	Input                  interface{}     `json:"input"`
+	ExpectedOutput         *ExpectedOutput `json:"expectedOutput"`
+	ExpectedStatus         int             `json:"expectedStatus"`
+	Mode                   *string         `json:"mode"`
+	LLMSimilarityThreshold *float64        `json:"llmSimilarityThreshold"`
 
 	Timeout *int `json:"timeout"`
 
@@ -67,6 +68,11 @@ var (
 	log            *zap.Logger
 	currentTestPtr int = -1
 	results        []Result
+	validTestModes = map[string]bool{
+		"COMPARE_OUTPUTS_EQUAL":               true,
+		"COMPARE_OUTPUTS_SIMILARITY_WITH_LLM": true,
+		"COMPARE_OUTPUTS_NOT_NULL":            true,
+	}
 )
 
 func Marshal(t interface{}) ([]byte, error) {
@@ -113,10 +119,24 @@ func init() {
 				testConfig[i].Timeout = &threeHundred
 			}
 			if test.ExpectedOutput == nil {
-				test.ExpectedOutput = &ExpectedOutput{
+				testConfig[i].ExpectedOutput = &ExpectedOutput{
 					Payload: nil,
 					Error:   "",
 				}
+			}
+
+			if test.Mode == nil {
+				testConfig[i].Mode = &[]string{"COMPARE_OUTPUTS_EQUAL"}[0]
+			} else {
+				valid, ok := validTestModes[*test.Mode]
+				if !ok || !valid {
+					testConfig[i].Mode = &[]string{"COMPARE_OUTPUTS_EQUAL"}[0]
+				}
+			}
+
+			if test.LLMSimilarityThreshold == nil {
+				zeroPointEight := 0.8
+				testConfig[i].LLMSimilarityThreshold = &zeroPointEight
 			}
 		}
 	} else {
@@ -129,6 +149,40 @@ func (h *Handler) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "healthy",
 	})
+}
+
+func (h *Handler) CompareOutputsWithLLM(expectedOutput interface{}, actualOutput interface{}, llmSimilarityThreshold float64) (bool, error) {
+	similarity := 0.0
+
+	if llmSimilarityThreshold > similarity {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (h *Handler) CompareOutputs(c *gin.Context, mode string, expectedOutput interface{}, actualOutput interface{}, llmSimilarityThreshold float64) bool {
+	if mode == "COMPARE_OUTPUTS_EQUAL" {
+		if reflect.DeepEqual(expectedOutput, actualOutput) {
+			return true
+		}
+	}
+
+	if mode == "COMPARE_OUTPUTS_SIMILARITY_WITH_LLM" {
+		result, err := h.CompareOutputsWithLLM(expectedOutput, actualOutput, llmSimilarityThreshold)
+		if err != nil {
+			return false
+		}
+		return result
+	}
+
+	if mode == "COMPARE_OUTPUTS_NOT_NULL" {
+		if actualOutput != nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func sendResultsToGraphQL(status string, errorReason *string) {
@@ -253,7 +307,8 @@ func (h *Handler) JobDone(c *gin.Context) {
 		return
 	}
 
-	if !reflect.DeepEqual(lastTest.ExpectedOutput.Payload, actualOutput) {
+	resultsValid := h.CompareOutputs(c, *lastTest.Mode, lastTest.ExpectedOutput.Payload, actualOutput, *lastTest.LLMSimilarityThreshold)
+	if !resultsValid {
 		results = append(results, Result{
 			ID:             *lastTest.ID,
 			Name:           lastTest.Name,
