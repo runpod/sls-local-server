@@ -49,9 +49,9 @@ type Result struct {
 	ActualOutput   interface{} `json:"actualOutput"`
 	Mode           string      `json:"mode"`
 
-	ExpectedError string `json:"expectedError"`
-	ActualError   string `json:"actualError"`
-	ExecutionTime int64  `json:"executionTime"`
+	// ExpectedError string `json:"expectedError"`
+	// ActualError   string `json:"actualError"`
+	ExecutionTime int64 `json:"executionTime"`
 }
 
 type Handler struct {
@@ -255,13 +255,14 @@ func cancelJob(timeout int, jobIndex int) {
 		Status:         "FAILED",
 		ExpectedOutput: testConfig[jobIndex].ExpectedOutput.Payload,
 		ActualOutput:   nil,
-		ExpectedError:  "",
-		ActualError:    "Execution timeout exceeded",
-		ExecutionTime:  time.Since(testConfig[jobIndex].StartedAt).Milliseconds(),
-		Mode:           *testConfig[jobIndex].Mode,
+		// ExpectedError:  "",
+		// ActualError:    "Execution timeout exceeded",
+		ExecutionTime: time.Since(testConfig[jobIndex].StartedAt).Milliseconds(),
+		Mode:          *testConfig[jobIndex].Mode,
 	})
 
-	sendResultsToGraphQL("FAILED", nil)
+	errorMsg := "Execution timeout exceeded"
+	sendResultsToGraphQL("FAILED", &errorMsg)
 }
 
 // GetStatus returns the status of a job

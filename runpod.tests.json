@@ -11,8 +11,7 @@
         "payload": {
           "text": "Hello world",
           "language": "en"
-        },
-        "error": ""
+        }
       }
     },
     {
@@ -27,8 +26,7 @@
         "payload": {
           "text": "Hello world",
           "language": "en"
-        },
-        "error": ""
+        }
       }
     },
     {
