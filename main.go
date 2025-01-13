@@ -47,6 +47,7 @@ type Result struct {
 
 	ExpectedOutput interface{} `json:"expectedOutput"`
 	ActualOutput   interface{} `json:"actualOutput"`
+	Mode           string      `json:"mode"`
 
 	ExpectedError string `json:"expectedError"`
 	ActualError   string `json:"actualError"`
@@ -256,7 +257,8 @@ func cancelJob(timeout int, jobIndex int) {
 		ActualOutput:   nil,
 		ExpectedError:  "",
 		ActualError:    "Execution timeout exceeded",
-		ExecutionTime:  int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds() / 1000),
+		ExecutionTime:  int(time.Since(testConfig[jobIndex].StartedAt).Milliseconds()),
+		Mode:           *testConfig[jobIndex].Mode,
 	})
 
 	sendResultsToGraphQL("FAILED", nil)
@@ -316,6 +318,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 			ActualOutput:   actualOutput,
 			ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
 			Status:         "FAILED",
+			Mode:           *lastTest.Mode,
 		})
 
 		sendResultsToGraphQL("FAILED", nil)
@@ -333,6 +336,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 		ActualOutput:   actualOutput,
 		ExecutionTime:  int(time.Since(lastTest.StartedAt).Seconds()),
 		Status:         "SUCCESS",
+		Mode:           *lastTest.Mode,
 	})
 	testConfig[currentTestPtr].Completed = true
 
