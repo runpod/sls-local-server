@@ -2,11 +2,12 @@
   "tests": [
     {
       "name": "validation_text_input",
+      "mode": "COMPARE_OUTPUTS_EQUAL",
       "input": {
         "text": "Hello world",
         "language": "en"
       },
-      "expected_output": {
+      "expectedOutput": {
         "payload": {
           "text": "Hello world",
           "language": "en"
@@ -16,16 +17,25 @@
     },
     {
       "name": "validation_text_input",
+      "mode": "COMPARE_OUTPUTS_SIMILARITY_WITH_LLM",
       "input": {
         "text": "Hello world",
         "language": "en"
       },
-      "expected_output": {
+      "expectedOutput": {
         "payload": {
           "text": "Hello world",
           "language": "en"
         },
         "error": ""
+      }
+    },
+    {
+      "name": "validation_text_input",
+      "mode": "COMPARE_OUTPUTS_NOT_NULL",
+      "input": {
+        "text": "Hello world",
+        "language": "en"
       }
     }
   ],

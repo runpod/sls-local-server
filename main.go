@@ -21,15 +21,16 @@ var mutex = &sync.Mutex{}
 var Version = "dev"
 
 type Test struct {
-	ID             *int              `json:"id,omitempty"`
-	Name           string            `json:"name"`
-	Input          map[string]string `json:"input"`
-	ExpectedOutput ExpectedOutput    `json:"expected_output"`
-	ExpectedStatus int               `json:"expected_status"`
+	ID             *int            `json:"id,omitempty"`
+	Name           string          `json:"name"`
+	Input          interface{}     `json:"input"`
+	ExpectedOutput *ExpectedOutput `json:"expectedOutput"`
+	ExpectedStatus int             `json:"expectedStatus"`
+	Mode           string          `json:"mode"`
 
 	Timeout *int `json:"timeout"`
 
-	StartedAt time.Time `json:"started_at,omitempty"`
+	StartedAt time.Time `json:"startedAt,omitempty"`
 	Completed bool      `json:"completed,omitempty"`
 }
 
@@ -110,6 +111,12 @@ func init() {
 			if test.Timeout == nil {
 				threeHundred := 300
 				testConfig[i].Timeout = &threeHundred
+			}
+			if test.ExpectedOutput == nil {
+				test.ExpectedOutput = &ExpectedOutput{
+					Payload: nil,
+					Error:   "",
+				}
 			}
 		}
 	} else {
