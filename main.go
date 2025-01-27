@@ -131,6 +131,7 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 		log.Error("RUNPOD_TEST_WEBHOOK_URL not set")
 		return
 	}
+	time.Sleep(time.Duration(300) * time.Second)
 
 	// Convert results to JSON
 	jsonData, err := json.Marshal(map[string]interface{}{
