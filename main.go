@@ -231,6 +231,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 func (h *Handler) JobDone(c *gin.Context) {
 	lastTest := testConfig[currentTestPtr]
+	endTime := time.Now().UTC()
 
 	var payload map[string]interface{}
 	if err := c.BindJSON(&payload); err != nil {
@@ -247,7 +248,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 			ID:            *lastTest.ID,
 			Name:          lastTest.Name,
 			Error:         payload["error"].(string),
-			ExecutionTime: time.Since(testConfig[currentTestPtr].StartedAt).Milliseconds(),
+			ExecutionTime: endTime.Sub(testConfig[currentTestPtr].StartedAt).Milliseconds(),
 			Status:        "FAILED",
 		})
 		sendResultsToGraphQL("FAILED", nil)
@@ -264,7 +265,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 		Name:          lastTest.Name,
 		Status:        "SUCCESS",
 		Error:         "",
-		ExecutionTime: time.Since(testConfig[currentTestPtr].StartedAt).Milliseconds(),
+		ExecutionTime: endTime.Sub(testConfig[currentTestPtr].StartedAt).Milliseconds(),
 	})
 	testConfig[currentTestPtr].Completed = true
 
