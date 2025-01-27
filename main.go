@@ -131,7 +131,6 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 		log.Error("RUNPOD_TEST_WEBHOOK_URL not set")
 		return
 	}
-	time.Sleep(time.Duration(300) * time.Second)
 
 	// Convert results to JSON
 	jsonData, err := json.Marshal(map[string]interface{}{
@@ -202,6 +201,11 @@ func (h *Handler) JobTake(c *gin.Context) {
 	h.log.Info("Job take", zap.Int("current_test", currentTestPtr))
 
 	currentTestPtr++
+	if currentTestPtr >= len(testConfig) {
+		sendResultsToGraphQL("FAILED", nil)
+		h.log.Error("No more tests", zap.Int("current_test", currentTestPtr))
+		return
+	}
 
 	nextTestPayload := testConfig[currentTestPtr]
 	testConfig[currentTestPtr].StartedAt = time.Now().UTC()
