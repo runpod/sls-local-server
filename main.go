@@ -121,16 +121,6 @@ func (h *Handler) Health(c *gin.Context) {
 	})
 }
 
-func (h *Handler) CompareOutputsWithLLM(expectedOutput interface{}, actualOutput interface{}, llmSimilarityThreshold float64) (bool, error) {
-	similarity := 0.0
-
-	if llmSimilarityThreshold > similarity {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func sendResultsToGraphQL(status string, errorReason *string) {
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
@@ -179,7 +169,7 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 		return
 	}
 
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(300) * time.Second)
 
 	log.Info("Results sent to GraphQL", zap.Any("results", results))
 }
@@ -214,7 +204,7 @@ func (h *Handler) JobTake(c *gin.Context) {
 
 	nextTestPayload := testConfig[currentTestPtr]
 	testConfig[currentTestPtr].StartedAt = time.Now().UTC()
-	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload))
+	h.log.Info("Job take", zap.Any("next_test_payload", nextTestPayload), zap.Any("current_test_ptr", currentTestPtr))
 
 	go cancelJob(*nextTestPayload.Timeout, currentTestPtr)
 
@@ -267,6 +257,9 @@ func (h *Handler) JobDone(c *gin.Context) {
 		Error:         "",
 		ExecutionTime: endTime.Sub(testConfig[currentTestPtr].StartedAt).Milliseconds(),
 	})
+
+	h.log.Info("Job done", zap.Any("results", results), zap.Any("current_test_ptr", currentTestPtr), zap.Any("end_time", endTime), zap.Any("start_time", testConfig[currentTestPtr].StartedAt))
+
 	testConfig[currentTestPtr].Completed = true
 
 	if currentTestPtr == len(testConfig)-1 {
