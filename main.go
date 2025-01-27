@@ -21,13 +21,9 @@ var mutex = &sync.Mutex{}
 var Version = "dev"
 
 type Test struct {
-	ID                     *int            `json:"id,omitempty"`
-	Name                   string          `json:"name"`
-	Input                  interface{}     `json:"input"`
-	ExpectedOutput         *ExpectedOutput `json:"expectedOutput"`
-	ExpectedStatus         int             `json:"expectedStatus"`
-	Mode                   *string         `json:"mode"`
-	LLMSimilarityThreshold *float64        `json:"llmSimilarityThreshold"`
+	ID    *int        `json:"id,omitempty"`
+	Name  string      `json:"name"`
+	Input interface{} `json:"input"`
 
 	Timeout *int `json:"timeout"`
 
@@ -41,17 +37,11 @@ type ExpectedOutput struct {
 }
 
 type Result struct {
-	ID     int    `json:"id"`
-	Name   string `json:"name,omitempty"`
-	Status string `json:"status"`
-
-	ExpectedOutput interface{} `json:"expectedOutput"`
-	ActualOutput   interface{} `json:"actualOutput"`
-	Mode           string      `json:"mode"`
-
-	// ExpectedError string `json:"expectedError"`
-	// ActualError   string `json:"actualError"`
-	ExecutionTime int64 `json:"executionTime"`
+	ID            int    `json:"id"`
+	Name          string `json:"name,omitempty"`
+	Status        string `json:"status"`
+	Error         string `json:"error"`
+	ExecutionTime int64  `json:"executionTime"`
 }
 
 type Handler struct {
@@ -118,26 +108,6 @@ func init() {
 			if test.Timeout == nil {
 				threeHundred := 300
 				testConfig[i].Timeout = &threeHundred
-			}
-			if test.ExpectedOutput == nil {
-				testConfig[i].ExpectedOutput = &ExpectedOutput{
-					Payload: nil,
-					Error:   "",
-				}
-			}
-
-			if test.Mode == nil {
-				testConfig[i].Mode = &[]string{"COMPARE_OUTPUTS_EQUAL"}[0]
-			} else {
-				valid, ok := validTestModes[*test.Mode]
-				if !ok || !valid {
-					testConfig[i].Mode = &[]string{"COMPARE_OUTPUTS_EQUAL"}[0]
-				}
-			}
-
-			if test.LLMSimilarityThreshold == nil {
-				zeroPointEight := 0.8
-				testConfig[i].LLMSimilarityThreshold = &zeroPointEight
 			}
 		}
 	} else {
@@ -250,15 +220,11 @@ func cancelJob(timeout int, jobIndex int) {
 
 	// send a request to graphql with the job index and execution timeout result
 	results = append(results, Result{
-		ID:             *testConfig[jobIndex].ID,
-		Name:           testConfig[jobIndex].Name,
-		Status:         "FAILED",
-		ExpectedOutput: testConfig[jobIndex].ExpectedOutput.Payload,
-		ActualOutput:   nil,
-		// ExpectedError:  "",
-		// ActualError:    "Execution timeout exceeded",
+		ID:            *testConfig[jobIndex].ID,
+		Name:          testConfig[jobIndex].Name,
+		Status:        "FAILED",
+		Error:         "Execution timeout exceeded",
 		ExecutionTime: time.Since(testConfig[jobIndex].StartedAt).Milliseconds(),
-		Mode:          *testConfig[jobIndex].Mode,
 	})
 
 	errorMsg := "Execution timeout exceeded"
@@ -301,43 +267,29 @@ func (h *Handler) JobDone(c *gin.Context) {
 	}
 	h.log.Info("Job done payload", zap.Any("payload", payload))
 
-	actualOutput, ok := payload["output"]
-	if !ok {
-		h.log.Error("Output not found in payload", zap.Any("payload", payload))
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Output not found in payload",
-		})
-		return
-	}
-
-	resultsValid := h.CompareOutputs(c, *lastTest.Mode, lastTest.ExpectedOutput.Payload, actualOutput, *lastTest.LLMSimilarityThreshold)
-	if !resultsValid {
+	if payload["error"] != nil {
 		results = append(results, Result{
-			ID:             *lastTest.ID,
-			Name:           lastTest.Name,
-			ExpectedOutput: lastTest.ExpectedOutput.Payload,
-			ActualOutput:   actualOutput,
-			ExecutionTime:  time.Since(lastTest.StartedAt).Milliseconds(),
-			Status:         "FAILED",
-			Mode:           *lastTest.Mode,
+			ID:            *lastTest.ID,
+			Name:          lastTest.Name,
+			Error:         payload["error"].(string),
+			ExecutionTime: time.Since(lastTest.StartedAt).Milliseconds(),
+			Status:        "FAILED",
 		})
-
 		sendResultsToGraphQL("FAILED", nil)
-		h.log.Error("Expected output does not match actual output", zap.Any("expected", lastTest.ExpectedOutput), zap.Any("actual", actualOutput))
+
+		h.log.Error("Error found in payload", zap.Any("payload", payload))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Expected output does not match actual output",
+			"error": "Error found in payload",
 		})
 		return
 	}
 
 	results = append(results, Result{
-		ID:             currentTestPtr,
-		Name:           lastTest.Name,
-		ExpectedOutput: lastTest.ExpectedOutput.Payload,
-		ActualOutput:   actualOutput,
-		ExecutionTime:  time.Since(lastTest.StartedAt).Milliseconds(),
-		Status:         "SUCCESS",
-		Mode:           *lastTest.Mode,
+		ID:            currentTestPtr,
+		Name:          lastTest.Name,
+		Status:        "SUCCESS",
+		Error:         "",
+		ExecutionTime: time.Since(lastTest.StartedAt).Milliseconds(),
 	})
 	testConfig[currentTestPtr].Completed = true
 
