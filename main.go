@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"reflect"
 	"sync"
 	"time"
 
@@ -132,30 +131,6 @@ func (h *Handler) CompareOutputsWithLLM(expectedOutput interface{}, actualOutput
 	return false, nil
 }
 
-func (h *Handler) CompareOutputs(c *gin.Context, mode string, expectedOutput interface{}, actualOutput interface{}, llmSimilarityThreshold float64) bool {
-	if mode == "COMPARE_OUTPUTS_EQUAL" {
-		if reflect.DeepEqual(expectedOutput, actualOutput) {
-			return true
-		}
-	}
-
-	if mode == "COMPARE_OUTPUTS_SIMILARITY_WITH_LLM" {
-		result, err := h.CompareOutputsWithLLM(expectedOutput, actualOutput, llmSimilarityThreshold)
-		if err != nil {
-			return false
-		}
-		return result
-	}
-
-	if mode == "COMPARE_OUTPUTS_NOT_NULL" {
-		if actualOutput != nil {
-			return true
-		}
-	}
-
-	return false
-}
-
 func sendResultsToGraphQL(status string, errorReason *string) {
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
@@ -272,7 +247,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 			ID:            *lastTest.ID,
 			Name:          lastTest.Name,
 			Error:         payload["error"].(string),
-			ExecutionTime: time.Since(lastTest.StartedAt).Milliseconds(),
+			ExecutionTime: time.Since(testConfig[currentTestPtr].StartedAt).Milliseconds(),
 			Status:        "FAILED",
 		})
 		sendResultsToGraphQL("FAILED", nil)
@@ -289,7 +264,7 @@ func (h *Handler) JobDone(c *gin.Context) {
 		Name:          lastTest.Name,
 		Status:        "SUCCESS",
 		Error:         "",
-		ExecutionTime: time.Since(lastTest.StartedAt).Milliseconds(),
+		ExecutionTime: time.Since(testConfig[currentTestPtr].StartedAt).Milliseconds(),
 	})
 	testConfig[currentTestPtr].Completed = true
 
