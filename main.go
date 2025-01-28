@@ -164,7 +164,9 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+jwtToken)
 
-	// Send request
+	time.Sleep(time.Duration(300) * time.Second)
+
+	// send request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
