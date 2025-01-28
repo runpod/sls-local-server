@@ -341,6 +341,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 			level = "error"
 			logMsg = strings.TrimPrefix(logMsg, "#ERROR:")
 		}
+		fmt.Println("logMsg: ### ", logMsg)
 		// Create log entry
 		logEntry := map[string]interface{}{
 			"testId":     os.Getenv("RUNPOD_TEST_ID"),
