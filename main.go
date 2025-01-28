@@ -426,14 +426,6 @@ func runCommand(command string) {
 
 	log.Info("Running command", zap.String("command", command))
 	cmd := exec.Command("sh", "-c", command)
-	err := cmd.Start()
-	if err != nil {
-		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
-		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
-		sendResultsToGraphQL("FAILED", &errorMsg)
-		log.Fatal("Failed to start command", zap.Error(err))
-	}
-
 	// Create pipes for stdout and stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -446,6 +438,14 @@ func runCommand(command string) {
 		logBuffer <- fmt.Sprintf("Failed to create stderr pipe: %s", err.Error())
 		log.Error("Failed to create stderr pipe", zap.Error(err))
 		return
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
+		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
+		sendResultsToGraphQL("FAILED", &errorMsg)
+		log.Fatal("Failed to start command", zap.Error(err))
 	}
 
 	go sendLogsToTinyBird(logBuffer)
