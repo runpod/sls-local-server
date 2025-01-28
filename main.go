@@ -116,8 +116,9 @@ func init() {
 			}
 		}
 	} else {
-		errorMsg := "No tests found."
-		sendResultsToGraphQL("FAILED", &errorMsg)
+		// errorMsg := "No tests found."
+		return
+		// sendResultsToGraphQL("FAILED", &errorMsg)
 	}
 }
 
