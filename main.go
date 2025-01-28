@@ -210,6 +210,7 @@ func cancelJob(timeout int, jobIndex int) {
 // GetStatus returns the status of a job
 func (h *Handler) JobTake(c *gin.Context) {
 	h.log.Info("Job take", zap.Int("current_test", currentTestPtr))
+	fmt.Println("Job take", currentTestPtr)
 
 	currentTestPtr++
 	if currentTestPtr >= len(testConfig) {
@@ -225,6 +226,8 @@ func (h *Handler) JobTake(c *gin.Context) {
 	go cancelJob(*nextTestPayload.Timeout, currentTestPtr)
 
 	testNumberChannel <- currentTestPtr
+	fmt.Println("currentTestPtr added to channel", currentTestPtr)
+
 	JSON(c, 200, gin.H{
 		"delayTime":     0,
 		"error":         "",
@@ -352,7 +355,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 
 		// Send logs when buffer is full or channel is closed
 		if len(buffer) >= 16 {
-			url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=github_build_logs"
+			url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
 
 			var records []string
 			for _, entry := range buffer {
@@ -390,7 +393,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 
 	// Send any remaining logs in buffer
 	if len(buffer) > 0 {
-		url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=github_build_logs"
+		url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
 
 		var records []string
 		for _, entry := range buffer {
