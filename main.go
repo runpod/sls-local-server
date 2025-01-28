@@ -348,7 +348,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 			"podId":      runpodPodId,
 			"testNumber": testNumber,
 			"message":    logMsg,
-			"timestamp":  time.Now().UTC().Format(time.RFC1123Z),
+			"timestamp":  time.Now().UTC(),
 		}
 
 		buffer = append(buffer, logEntry)
