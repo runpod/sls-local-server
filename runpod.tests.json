@@ -5,7 +5,8 @@
       "input": {
         "text": "Hello world",
         "language": "en"
-      }
+      },
+      "timeout": 10000
     },
     {
       "name": "validation_text_input",
