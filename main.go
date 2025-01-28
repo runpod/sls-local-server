@@ -342,7 +342,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 			logMsg = strings.TrimPrefix(logMsg, "#ERROR:")
 		}
 		logMessageList := strings.Split(logMsg, "\n")
-		
+
 		for _, logMessage := range logMessageList {
 			fmt.Println("logMsg: ### ", logMessage)
 			// Create log entry
@@ -351,7 +351,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 				"level":      level,
 				"podId":      runpodPodId,
 				"testNumber": testNumber,
-				"message":    logMsg,
+				"message":    logMessage,
 				"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
 			}
 
