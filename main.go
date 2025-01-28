@@ -87,15 +87,14 @@ func init() {
 	os.Setenv("TINYBIRD_TOKEN", "p.eyJ1IjogImZhYzExMWQ5LWNiOWUtNDEyMi1hNDA0LTU4ODY3NzM4ZjU1YSIsICJpZCI6ICI5ZGY4MWU4YS02YWNhLTRmYmItYmNhOS01NzVjMmE3ODZlMDIiLCAiaG9zdCI6ICJ1c19lYXN0In0._vhxP9aotN5nWJbjdu4SHu33iFZcKmNPjZHIW9nWLrg")
 
 	// Initialize logger
-	// var err error
+	var err error
 	if os.Getenv("ENV") == "local" {
 		log = prettyconsole.NewLogger(zap.DebugLevel)
 	} else {
-		// log, err = zap.NewProduction()
-		// if err != nil {
-		// 	panic("Failed to initialize logger: " + err.Error())
-		// }
-		log = prettyconsole.NewLogger(zap.DebugLevel)
+		log, err = zap.NewProduction()
+		if err != nil {
+			panic("Failed to initialize logger: " + err.Error())
+		}
 	}
 
 	if os.Getenv("RUNPOD_TEST") == "true" {
@@ -552,6 +551,8 @@ func main() {
 		fmt.Println(Version)
 		return
 	}
+
+	log = prettyconsole.NewLogger(zap.DebugLevel)
 	defer log.Sync()
 
 	go func() {
