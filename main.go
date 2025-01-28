@@ -164,8 +164,6 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+jwtToken)
 
-	time.Sleep(time.Duration(300) * time.Second)
-
 	// send request
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -337,15 +335,15 @@ func sendLogsToTinyBird(logBuffer chan string) {
 
 	for logMsg := range logBuffer {
 		level := "info"
-		if strings.HasPrefix(logMsg, "#ERROR:") {
-			level = "error"
-			logMsg = strings.TrimPrefix(logMsg, "#ERROR:")
-		}
 		logMessageList := strings.Split(logMsg, "\n")
 
 		for _, logMessage := range logMessageList {
 			fmt.Println("logMsg: ### ", logMessage)
 			// Create log entry
+			if strings.HasPrefix(logMessage, "#ERROR:") {
+				level = "error"
+				logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
+			}
 			logEntry := map[string]interface{}{
 				"testId":     os.Getenv("RUNPOD_TEST_ID"),
 				"level":      level,
@@ -436,6 +434,8 @@ func runCommand(command string) {
 
 	log.Info("Running command", zap.String("command", command))
 	cmd := exec.Command("sh", "-c", command)
+	cmd.Env = append(os.Environ(), "RUNPOD_LOG_LEVEL=INFO")
+
 	// Create pipes for stdout and stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
