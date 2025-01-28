@@ -341,18 +341,22 @@ func sendLogsToTinyBird(logBuffer chan string) {
 			level = "error"
 			logMsg = strings.TrimPrefix(logMsg, "#ERROR:")
 		}
-		fmt.Println("logMsg: ### ", logMsg)
-		// Create log entry
-		logEntry := map[string]interface{}{
-			"testId":     os.Getenv("RUNPOD_TEST_ID"),
-			"level":      level,
-			"podId":      runpodPodId,
-			"testNumber": testNumber,
-			"message":    logMsg,
-			"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
-		}
+		logMessageList := strings.Split(logMsg, "\n")
+		
+		for _, logMessage := range logMessageList {
+			fmt.Println("logMsg: ### ", logMessage)
+			// Create log entry
+			logEntry := map[string]interface{}{
+				"testId":     os.Getenv("RUNPOD_TEST_ID"),
+				"level":      level,
+				"podId":      runpodPodId,
+				"testNumber": testNumber,
+				"message":    logMsg,
+				"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+			}
 
-		buffer = append(buffer, logEntry)
+			buffer = append(buffer, logEntry)
+		}
 
 		// Send logs when buffer is full or channel is closed
 		if len(buffer) >= 16 {
