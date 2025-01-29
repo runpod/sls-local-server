@@ -84,8 +84,6 @@ func JSON(c *gin.Context, code int, obj interface{}) {
 }
 
 func init() {
-	os.Setenv("TINYBIRD_TOKEN", "p.eyJ1IjogImZhYzExMWQ5LWNiOWUtNDEyMi1hNDA0LTU4ODY3NzM4ZjU1YSIsICJpZCI6ICI5ZGY4MWU4YS02YWNhLTRmYmItYmNhOS01NzVjMmE3ODZlMDIiLCAiaG9zdCI6ICJ1c19lYXN0In0._vhxP9aotN5nWJbjdu4SHu33iFZcKmNPjZHIW9nWLrg")
-
 	// Initialize logger
 	var err error
 	if os.Getenv("ENV") == "local" {
