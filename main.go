@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sls-local-server/packages/ide"
 	"strings"
 	"sync"
 	"time"
@@ -551,6 +552,7 @@ func RunServer() {
 func main() {
 	command := flag.String("command", "python3 handler.py", "the user command to run")
 	check := flag.String("check", "null", "the version of the server to run")
+	aiApiIde := flag.String("ai-api-ide", "null", "should the binary server an ide")
 
 	flag.Parse()
 
@@ -559,11 +561,22 @@ func main() {
 		return
 	}
 
+	log.Info("aiApiIde", zap.String("aiApiIde", *aiApiIde))
+
 	log = prettyconsole.NewLogger(zap.DebugLevel)
 	defer log.Sync()
 
-	go func() {
-		runCommand(*command)
-	}()
-	RunServer()
+	if aiApiIde != nil && *aiApiIde == "true" {
+		err := ide.DownloadIde(log)
+		if err != nil {
+			log.Error("Failed to download ide", zap.Error(err))
+			return
+		}
+		runCommand("code-server --bind-addr 0.0.0.0:8080")
+	} else {
+		go func() {
+			runCommand(*command)
+		}()
+		RunServer()
+	}
 }
