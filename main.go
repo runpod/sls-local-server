@@ -427,7 +427,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 	}
 }
 
-func runCommand(command string) {
+func runCommand(command string) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 16)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
@@ -441,13 +441,13 @@ func runCommand(command string) {
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to create stdout pipe: %s", err.Error())
 		log.Error("Failed to create stdout pipe", zap.Error(err))
-		return
+		return err
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to create stderr pipe: %s", err.Error())
 		log.Error("Failed to create stderr pipe", zap.Error(err))
-		return
+		return err
 	}
 
 	err = cmd.Start()
@@ -455,7 +455,8 @@ func runCommand(command string) {
 		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
 		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
 		sendResultsToGraphQL("FAILED", &errorMsg)
-		log.Fatal("Failed to start command", zap.Error(err))
+		log.Error("Failed to start command", zap.Error(err))
+		return err
 	}
 
 	go sendLogsToTinyBird(logBuffer)
@@ -511,6 +512,7 @@ func runCommand(command string) {
 	cmd.Wait()
 
 	close(logBuffer)
+	return fmt.Errorf("Command closed")
 }
 
 func RunServer() {
@@ -549,10 +551,45 @@ func RunServer() {
 	}
 }
 
+func terminateIdePod() {
+	runpodPodIDEJwt := os.Getenv("RUNPOD_IDE_POD_JWT")
+	webhookUrl := os.Getenv("RUNPOD_IDE_POD_WEBHOOK_URL")
+
+	if runpodPodIDEJwt == "" || webhookUrl == "" {
+		log.Error("RUNPOD_IDE_POD_JWT or RUNPOD_IDE_POD_WEBHOOK_URL not set")
+		return
+	}
+
+	req, err := http.NewRequest("POST", webhookUrl, nil)
+	if err != nil {
+		log.Error("Failed to create request", zap.Error(err))
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+runpodPodIDEJwt)
+
+	// send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error("Failed to send request", zap.Error(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Error("Request failed", zap.Int("status", resp.StatusCode))
+		return
+	}
+
+	time.Sleep(time.Duration(300) * time.Second)
+}
+
 func main() {
 	command := flag.String("command", "python3 handler.py", "the user command to run")
 	check := flag.String("check", "null", "the version of the server to run")
-	aiApiIde := flag.String("ai-api-ide", "null", "should the binary server an ide")
+	aiApiIde := flag.String("-ai-api-ide", "null", "should the binary server an ide")
 
 	flag.Parse()
 
@@ -570,9 +607,15 @@ func main() {
 		err := ide.DownloadIde(log)
 		if err != nil {
 			log.Error("Failed to download ide", zap.Error(err))
+			terminateIdePod()
 			return
 		}
-		runCommand("code-server --bind-addr 0.0.0.0:8080")
+		err = runCommand("code-server --bind-addr 0.0.0.0:8080")
+		if err != nil {
+			log.Error("Failed to run command", zap.Error(err))
+			terminateIdePod()
+			return
+		}
 	} else {
 		go func() {
 			runCommand(*command)
