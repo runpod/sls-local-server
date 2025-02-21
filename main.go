@@ -589,7 +589,7 @@ func terminateIdePod() {
 func main() {
 	command := flag.String("command", "python3 handler.py", "the user command to run")
 	check := flag.String("check", "null", "the version of the server to run")
-	aiApiIde := flag.String("-ai-api-ide", "null", "should the binary server an ide")
+	aiApiIde := flag.String("ai-api-ide", "null", "should the binary server an ide")
 
 	flag.Parse()
 
