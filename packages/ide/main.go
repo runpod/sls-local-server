@@ -1,11 +1,19 @@
 package ide
 
 import (
+	_ "embed"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"go.uber.org/zap"
 )
+
+//go:embed install_bash.sh
+var bashInstallScript string
+
+//go:embed install_sh.sh
+var shInstallScript string
 
 func DownloadIde(logger *zap.Logger) error {
 	// First install curl
@@ -19,21 +27,24 @@ func DownloadIde(logger *zap.Logger) error {
 	}
 
 	if shellType == "bash" {
-		bashCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("chmod +x %s && %s", "packages/ide/install_bash.sh", "packages/ide/install_bash.sh"))
-		stdout, err := bashCmd.Output()
+		cmd := exec.Command("/bin/bash", "-s")
+		// Set the script as the command's standard input.
+		cmd.Stdin = strings.NewReader(bashInstallScript)
+		output, err := cmd.CombinedOutput()
 		if err != nil {
-			logger.Error("Failed to run install_bash.sh", zap.Error(err))
-			return fmt.Errorf("failed to run install_bash.sh: %v, output: %s", err, string(stdout))
+			logger.Error("Error executing script", zap.Error(err))
+			return fmt.Errorf("failed to execute bash install script: %v", err)
 		}
-		logger.Info("Successfully ran install_bash.sh", zap.String("output", string(stdout)))
+		logger.Info("Script output", zap.String("output", string(output)))
 	} else {
-		shCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("chmod +x %s && %s", "packages/ide/install_sh.sh", "packages/ide/install_sh.sh"))
-		stdout, err := shCmd.Output()
+		cmd := exec.Command("/bin/bash", "-s")
+		cmd.Stdin = strings.NewReader(shInstallScript)
+		output, err := cmd.CombinedOutput()
 		if err != nil {
-			logger.Error("Failed to run install_sh.sh", zap.Error(err))
-			return fmt.Errorf("failed to run install_sh.sh: %v, output: %s", err, string(stdout))
+			logger.Error("Error executing script", zap.Error(err))
+			return fmt.Errorf("failed to execute bash install script: %v", err)
 		}
-		logger.Info("Successfully ran install_sh.sh", zap.String("output", string(stdout)))
+		logger.Info("Script output", zap.String("output", string(output)))
 	}
 
 	// Check if curl is available
