@@ -1,0 +1,48 @@
+{
+    "tests": [
+      {
+        "name": "validation_text_input",
+        "input": {
+          "text": "Hello world",
+          "language": "en"
+        },
+        // timeout in milliseconds
+        "timeout": 10000
+      },
+      {
+        "name": "validation_text_input",
+        "input": {
+          "text": "Hello world",
+          "language": "en"
+        }
+      }
+    ],
+    "config": {
+      // pick one from the following list to run on. If runsOn is GPU, cpuFlavor configuration will be ignored. If runsOn is CPU, gpuType and gpusPerWorker configuration will be ignored. defaults to GPU. this is an optional field - you can omit it if you want.
+      "runsOn": "GPU,CPU",
+      // pick one from the following list to run on gpu. if runsOn is not GPU, this will be ignored. defaults to NVIDIA GeForce RTX 4090. this is an optional field - you can omit it if you want.
+      "gpuTypeId": "A100-PCIE-40GB,GeForce RTX 3070,GeForce RTX 3080,GeForce RTX 3090,Graphics Device,NVIDIA A100 80GB PCIe,NVIDIA A100-PCIE-40GB,NVIDIA A100-SXM4-40GB,NVIDIA A100-SXM4-80GB,NVIDIA A30,NVIDIA A40,NVIDIA GeForce GT 1030,NVIDIA GeForce GTX 1050 Ti,NVIDIA GeForce GTX 1070 Ti,NVIDIA GeForce GTX 1080 Ti,NVIDIA GeForce GTX 1660,NVIDIA GeForce GTX 980,NVIDIA GeForce RTX 3060,NVIDIA GeForce RTX 3060 Ti,NVIDIA GeForce RTX 3070,NVIDIA GeForce RTX 3070 Ti,NVIDIA GeForce RTX 3080,NVIDIA GeForce RTX 3080 Ti,NVIDIA GeForce RTX 3090,NVIDIA GeForce RTX 3090 Ti,NVIDIA GeForce RTX 4070 Ti,NVIDIA GeForce RTX 4080,NVIDIA GeForce RTX 4080 SUPER,NVIDIA GeForce RTX 4090,NVIDIA Graphics Device,NVIDIA H100 80GB HBM3,NVIDIA H100 NVL,NVIDIA H100 PCIe,NVIDIA H200,NVIDIA L4,NVIDIA L40,NVIDIA L40S,NVIDIA PH402 SKU 200,NVIDIA RTX 2000 Ada Generation,NVIDIA RTX 4000 Ada Generation,NVIDIA RTX 4000 SFF Ada Generation,NVIDIA RTX 4500 Ada Generation,NVIDIA RTX 5000 Ada Generation,NVIDIA RTX 6000 Ada Generation,NVIDIA RTX A2000,NVIDIA RTX A4000,NVIDIA RTX A4500,NVIDIA RTX A5000,NVIDIA RTX A6000,Quadro GV100,Quadro RTX 4000,Quadro RTX 5000,Quadro RTX 6000,Tesla K80,Tesla V100-FHHL-16GB,Tesla V100-PCIE-16GB,Tesla V100-SXM2-16GB,Tesla V100-SXM2-32GB",
+      // number of gpus per worker. if runsOn is not GPU, this will be ignored. defaults to 1. this is an optional field - you can omit it if you want.
+      "gpuCount": 1,
+      // the cpuFlavor can be configured but we suggest you leave it as it is - you can omit it if you want.
+      "cpuFlavor": "cpu3g-4-16",
+      // pass in environment variables here. this is an optional field - you can omit it if you want. defaults to an empty array.
+      "env": [{
+          "key": "ENV_KEY_HERE",
+          "value": "ENV_VALUE_HERE"
+      }],
+      // allowed cuda versions. this is an optional field - you can omit it if you want. defaults to all cuda versions. 
+      "allowedCudaVersions": [
+        "12.7",
+        "12.6",
+        "12.5",
+        "12.4",
+        "12.3",
+        "12.2",
+        "12.1",
+        "12.0",
+        "11.7"
+      ]
+      // these are the only supported fields. please do not add any other fields.
+    }
+}

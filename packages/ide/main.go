@@ -11,6 +11,27 @@ func DownloadIde(logger *zap.Logger) error {
 	// First install curl
 	url := "https://code-server.dev/install.sh"
 
+	// Check if bash is available
+	bashCmd := exec.Command("which", "bash")
+	shellType := "sh"
+	if err := bashCmd.Run(); err == nil {
+		shellType = "bash"
+	}
+
+	if shellType == "bash" {
+		bashCmd := exec.Command("/bin/bash", "-c", "chmod +x shell/install_bash.sh && ./shell/install_bash.sh")
+		if err := bashCmd.Run(); err != nil {
+			logger.Error("Failed to run install_bash.sh", zap.Error(err))
+			return fmt.Errorf("failed to run install_bash.sh: %v", err)
+		}
+	} else {
+		shCmd := exec.Command("/bin/sh", "-c", "chmod +x shell/install_sh.sh && ./shell/install_sh.sh")
+		if err := shCmd.Run(); err != nil {
+			logger.Error("Failed to run install_sh.sh", zap.Error(err))
+			return fmt.Errorf("failed to run install_sh.sh: %v", err)
+		}
+	}
+
 	// Check if curl is available
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
