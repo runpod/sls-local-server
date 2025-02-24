@@ -26,6 +26,8 @@ func DownloadIde(logger *zap.Logger) error {
 		shellType = "bash"
 	}
 
+	logger.Info("Detected shell type", zap.String("shell", shellType), zap.String("script", bashInstallScript))
+
 	if shellType == "bash" {
 		cmd := exec.Command("/bin/bash", "-s")
 		// Set the script as the command's standard input.
