@@ -20,16 +20,20 @@ func DownloadIde(logger *zap.Logger) error {
 
 	if shellType == "bash" {
 		bashCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("chmod +x %s && %s", "packages/ide/install_bash.sh", "packages/ide/install_bash.sh"))
-		if err := bashCmd.Run(); err != nil {
+		stdout, err := bashCmd.Output()
+		if err != nil {
 			logger.Error("Failed to run install_bash.sh", zap.Error(err))
-			return fmt.Errorf("failed to run install_bash.sh: %v", err)
+			return fmt.Errorf("failed to run install_bash.sh: %v, output: %s", err, string(stdout))
 		}
+		logger.Info("Successfully ran install_bash.sh", zap.String("output", string(stdout)))
 	} else {
 		shCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("chmod +x %s && %s", "packages/ide/install_sh.sh", "packages/ide/install_sh.sh"))
-		if err := shCmd.Run(); err != nil {
+		stdout, err := shCmd.Output()
+		if err != nil {
 			logger.Error("Failed to run install_sh.sh", zap.Error(err))
-			return fmt.Errorf("failed to run install_sh.sh: %v", err)
+			return fmt.Errorf("failed to run install_sh.sh: %v, output: %s", err, string(stdout))
 		}
+		logger.Info("Successfully ran install_sh.sh", zap.String("output", string(stdout)))
 	}
 
 	// Check if curl is available
