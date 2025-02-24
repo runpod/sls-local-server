@@ -19,13 +19,13 @@ func DownloadIde(logger *zap.Logger) error {
 	}
 
 	if shellType == "bash" {
-		bashCmd := exec.Command("/bin/bash", "-c", "chmod +x shell/install_bash.sh && ./shell/install_bash.sh")
+		bashCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("chmod +x %s && %s", "packages/ide/install_bash.sh", "packages/ide/install_bash.sh"))
 		if err := bashCmd.Run(); err != nil {
 			logger.Error("Failed to run install_bash.sh", zap.Error(err))
 			return fmt.Errorf("failed to run install_bash.sh: %v", err)
 		}
 	} else {
-		shCmd := exec.Command("/bin/sh", "-c", "chmod +x shell/install_sh.sh && ./shell/install_sh.sh")
+		shCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("chmod +x %s && %s", "packages/ide/install_sh.sh", "packages/ide/install_sh.sh"))
 		if err := shCmd.Run(); err != nil {
 			logger.Error("Failed to run install_sh.sh", zap.Error(err))
 			return fmt.Errorf("failed to run install_sh.sh: %v", err)
