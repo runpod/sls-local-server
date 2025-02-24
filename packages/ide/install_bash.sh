@@ -15,26 +15,26 @@ echo "Detected Linux: $PRETTY_NAME"
 # Determine the package manager and package based on the distribution.
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
-    sudo apt-get update
+    apt-get update
     PKG="curl"
-    INSTALL_CMD="sudo apt-get install -y"
+    INSTALL_CMD="apt-get install -y"
 elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" ]]; then
     echo "Using dnf/yum for Fedora/CentOS/RHEL..."
     # Prefer dnf if available, else fall back to yum.
     if command -v dnf >/dev/null 2>&1; then
-        INSTALL_CMD="sudo dnf install -y"
+        INSTALL_CMD="dnf install -y"
     else
-        INSTALL_CMD="sudo yum install -y"
+        INSTALL_CMD="yum install -y"
     fi
     PKG="wget"
 elif [[ "$ID" == "arch" ]]; then
     echo "Using pacman for Arch Linux..."
     PKG="curl"
-    INSTALL_CMD="sudo pacman -S --noconfirm"
+    INSTALL_CMD="pacman -S --noconfirm"
 elif [[ "$ID" == "opensuse" ]]; then
     echo "Using zypper for openSUSE..."
     PKG="wget"
-    INSTALL_CMD="sudo zypper install -y"
+    INSTALL_CMD="zypper install -y"
 else
     echo "Unsupported or unrecognized distribution: $ID"
     exit 1

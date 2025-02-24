@@ -3,8 +3,8 @@ package ide
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"os/exec"
-	"strings"
 
 	"go.uber.org/zap"
 )
@@ -28,26 +28,27 @@ func DownloadIde(logger *zap.Logger) error {
 
 	logger.Info("Detected shell type", zap.String("shell", shellType), zap.String("script", bashInstallScript))
 
+	// Determine which script to use based on shell type
+	scriptContent := shInstallScript
 	if shellType == "bash" {
-		cmd := exec.Command("/bin/bash", "-s")
-		// Set the script as the command's standard input.
-		cmd.Stdin = strings.NewReader(bashInstallScript)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			logger.Error("Error executing script", zap.Error(err))
-			return fmt.Errorf("failed to execute bash install script: %v", err)
-		}
-		logger.Info("Script output", zap.String("output", string(output)))
-	} else {
-		cmd := exec.Command("/bin/bash", "-s")
-		cmd.Stdin = strings.NewReader(shInstallScript)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			logger.Error("Error executing script", zap.Error(err))
-			return fmt.Errorf("failed to execute bash install script: %v", err)
-		}
-		logger.Info("Script output", zap.String("output", string(output)))
+		scriptContent = bashInstallScript
 	}
+
+	// Write the script to a file
+	err := os.WriteFile("install.sh", []byte(scriptContent), 0755)
+	if err != nil {
+		logger.Error("Failed to write install script to file", zap.Error(err))
+		return fmt.Errorf("failed to write install script to file: %v", err)
+	}
+
+	// Execute the script
+	cmd := exec.Command("./install.sh")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		logger.Error("Error executing install script", zap.Error(err))
+		return fmt.Errorf("failed to execute install script: %v", err)
+	}
+	logger.Info("Script output", zap.String("output", string(output)))
 
 	// Check if curl is available
 	curlCmd := exec.Command("which", "curl")
@@ -74,7 +75,7 @@ func DownloadIde(logger *zap.Logger) error {
 	}
 
 	// Then install code-server
-	cmd := exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
+	cmd = exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to create stdout pipe", zap.Error(err))
