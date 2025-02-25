@@ -24,6 +24,8 @@ var gqlMutex = &sync.Mutex{}
 var Version = "dev"
 var testNumberChannel = make(chan int)
 var SYSTEM_INITIALIZED = false
+var slash = "/"
+var folder = &slash
 
 type Test struct {
 	ID    *int        `json:"id,omitempty"`
@@ -131,6 +133,7 @@ func (h *Handler) Health(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "healthy",
+		"folder": *folder,
 	})
 }
 
@@ -616,7 +619,7 @@ func main() {
 	command := flag.String("command", "python3 handler.py", "the user command to run")
 	check := flag.String("check", "null", "the version of the server to run")
 	aiApiIde := flag.String("ai-api-ide", "null", "should the binary server an ide")
-	folder := flag.String("folder", "/", "the folder to run the command in")
+	folder = flag.String("folder", "/", "the folder to run the command in")
 
 	flag.Parse()
 
@@ -644,9 +647,6 @@ func main() {
 
 		SYSTEM_INITIALIZED = true
 		cmd := "code-server --bind-addr 0.0.0.0:8080 --auth none"
-		if folder != nil {
-			cmd = fmt.Sprintf("DEFAULT_WORKSPACE=%s %s", *folder, cmd)
-		}
 		err = runCommand(cmd)
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
