@@ -654,6 +654,16 @@ func main() {
 			return
 		}
 
+		go func() {
+			cmd := "chmod +x /aiapi && /aiapi"
+			err = runCommand(cmd)
+			if err != nil {
+				log.Error("Failed to run command", zap.String("command", cmd), zap.Error(err))
+				terminateIdePod()
+				return
+			}
+		}()
+
 		SYSTEM_INITIALIZED = true
 		cmd := fmt.Sprintf("PASSWORD=runpod code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"Welcome to the Runpod IDE\" --app-name \"Runpod IDE\" %s", *folder)
 		err = runCommand(cmd)
