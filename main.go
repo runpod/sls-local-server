@@ -131,9 +131,25 @@ func (h *Handler) Health(c *gin.Context) {
 		})
 	}
 
+	// Check the heartbeat file for code-server
+	heartbeatFile := "/root/.local/share/code-server/heartbeat"
+	fileInfo, err := os.Stat(heartbeatFile)
+
+	var heartbeat time.Time
+	if err == nil {
+		// Store the last modified time if file exists
+		heartbeat = fileInfo.ModTime()
+		log.Info("Code-server heartbeat found", zap.Time("lastModified", heartbeat))
+	} else {
+		// If file doesn't exist or can't be accessed
+		log.Warn("Could not access code-server heartbeat file", zap.Error(err))
+		heartbeat = time.Time{} // Zero time
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"status": "healthy",
-		"folder": *folder,
+		"status":    "healthy",
+		"folder":    *folder,
+		"heartbeat": heartbeat,
 	})
 }
 
