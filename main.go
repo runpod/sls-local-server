@@ -533,6 +533,12 @@ func RunHealthServer() {
 	r.Use(LoggerMiddleware(log))
 
 	r.GET("/health", h.Health)
+
+	if err := r.Run(":" + "8079"); err != nil {
+		errorMsg := "Failed to start tests. Please push your changes again!"
+		sendResultsToGraphQL("FAILED", &errorMsg)
+		log.Fatal("Failed to start server", zap.Error(err))
+	}
 }
 
 func RunServer() {
@@ -630,6 +636,10 @@ func main() {
 			terminateIdePod()
 			return
 		}
+
+		go func() {
+			RunHealthServer()
+		}()
 
 		SYSTEM_INITIALIZED = true
 		err = runCommand("code-server --bind-addr 0.0.0.0:8080")
