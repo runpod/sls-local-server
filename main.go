@@ -66,11 +66,6 @@ var (
 	log            *zap.Logger
 	currentTestPtr int = -1
 	results        []Result
-	validTestModes = map[string]bool{
-		"COMPARE_OUTPUTS_EQUAL":               true,
-		"COMPARE_OUTPUTS_SIMILARITY_WITH_LLM": true,
-		"COMPARE_OUTPUTS_NOT_NULL":            true,
-	}
 )
 
 func Marshal(t interface{}) ([]byte, error) {
@@ -644,8 +639,6 @@ func main() {
 		return
 	}
 
-	log.Info("aiApiIde", zap.String("aiApiIde", *aiApiIde))
-
 	log = prettyconsole.NewLogger(zap.DebugLevel)
 	defer log.Sync()
 
@@ -662,7 +655,7 @@ func main() {
 		}
 
 		SYSTEM_INITIALIZED = true
-		cmd := "code-server --bind-addr 0.0.0.0:8080 --auth none"
+		cmd := fmt.Sprintf("PASSWORD=runpod code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"Welcome to the Runpod IDE\" --app-name \"Runpod IDE\" %s", *folder)
 		err = runCommand(cmd)
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
