@@ -616,6 +616,7 @@ func main() {
 	command := flag.String("command", "python3 handler.py", "the user command to run")
 	check := flag.String("check", "null", "the version of the server to run")
 	aiApiIde := flag.String("ai-api-ide", "null", "should the binary server an ide")
+	folder := flag.String("folder", "/", "the folder to run the command in")
 
 	flag.Parse()
 
@@ -642,7 +643,11 @@ func main() {
 		}
 
 		SYSTEM_INITIALIZED = true
-		err = runCommand("code-server --bind-addr 0.0.0.0:8080 --auth none")
+		cmd := "code-server --bind-addr 0.0.0.0:8080 --auth none"
+		if folder != nil {
+			cmd = fmt.Sprintf("%s --folder %s", cmd, *folder)
+		}
+		err = runCommand(cmd)
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
 			terminateIdePod()
