@@ -659,7 +659,7 @@ func main() {
 		}
 
 		go func() {
-			cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS=password HOST_ACCESS_TOKEN=test ENV=local /aiapi"
+			cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
 			err = runCommand(cmd)
 			if err != nil {
 				log.Error("Failed to run command", zap.String("command", cmd), zap.Error(err))
