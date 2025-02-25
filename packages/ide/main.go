@@ -72,6 +72,15 @@ func DownloadIde(logger *zap.Logger) error {
 		}
 	}
 
+	// Start Redis server in daemonized mode
+	redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
+	redisOutput, err := redisCmd.CombinedOutput()
+	if err != nil {
+		logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
+		return fmt.Errorf("failed to start Redis server: %v", err)
+	}
+	logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
+
 	// Then install code-server
 	cmd = exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
 	stdout, err := cmd.StdoutPipe()

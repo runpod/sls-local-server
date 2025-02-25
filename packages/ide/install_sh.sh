@@ -41,6 +41,3 @@ fi
 
 echo "Installing $PKG..."
 $INSTALL_CMD $PKG
-
-echo "Installation complete. Starting redis-server..."
-redis-server &
