@@ -642,7 +642,7 @@ func main() {
 		}
 
 		SYSTEM_INITIALIZED = true
-		err = runCommand("code-server --bind-addr 0.0.0.0:8080")
+		err = runCommand("code-server --bind-addr 0.0.0.0:8080 --auth none")
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
 			terminateIdePod()
