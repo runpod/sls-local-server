@@ -645,7 +645,7 @@ func main() {
 		SYSTEM_INITIALIZED = true
 		cmd := "code-server --bind-addr 0.0.0.0:8080 --auth none"
 		if folder != nil {
-			cmd = fmt.Sprintf("%s --folder %s", cmd, *folder)
+			cmd = fmt.Sprintf("DEFAULT_WORKSPACE=%s %s", *folder, cmd)
 		}
 		err = runCommand(cmd)
 		if err != nil {
