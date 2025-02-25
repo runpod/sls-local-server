@@ -123,7 +123,7 @@ func init() {
 }
 
 func (h *Handler) Health(c *gin.Context) {
-	if SYSTEM_INITIALIZED == false {
+	if !SYSTEM_INITIALIZED {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"status": "unhealthy",
 		})
@@ -630,16 +630,16 @@ func main() {
 	defer log.Sync()
 
 	if aiApiIde != nil && *aiApiIde == "true" {
+		go func() {
+			RunHealthServer()
+		}()
+
 		err := ide.DownloadIde(log)
 		if err != nil {
 			log.Error("Failed to download ide", zap.Error(err))
 			terminateIdePod()
 			return
 		}
-
-		go func() {
-			RunHealthServer()
-		}()
 
 		SYSTEM_INITIALIZED = true
 		err = runCommand("code-server --bind-addr 0.0.0.0:8080")
