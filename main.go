@@ -23,6 +23,7 @@ var mutex = &sync.Mutex{}
 var gqlMutex = &sync.Mutex{}
 var Version = "dev"
 var testNumberChannel = make(chan int)
+var SYSTEM_INITIALIZED = false
 
 type Test struct {
 	ID    *int        `json:"id,omitempty"`
@@ -122,6 +123,12 @@ func init() {
 }
 
 func (h *Handler) Health(c *gin.Context) {
+	if SYSTEM_INITIALIZED == false {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "unhealthy",
+		})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": "healthy",
 	})
@@ -515,6 +522,19 @@ func runCommand(command string) error {
 	return fmt.Errorf("Command closed")
 }
 
+func RunHealthServer() {
+	gin.SetMode(gin.ReleaseMode)
+	h := NewHandler(log)
+
+	r := gin.New()
+	// Add recovery middleware
+	r.Use(gin.Recovery())
+	// Add logging middleware
+	r.Use(LoggerMiddleware(log))
+
+	r.GET("/health", h.Health)
+}
+
 func RunServer() {
 	log.Info("Starting server")
 
@@ -610,6 +630,8 @@ func main() {
 			terminateIdePod()
 			return
 		}
+
+		SYSTEM_INITIALIZED = true
 		err = runCommand("code-server --bind-addr 0.0.0.0:8080")
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
