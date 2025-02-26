@@ -22,7 +22,7 @@ func DownloadIde(logger *zap.Logger) error {
 	isDev := os.Getenv("RUNPOD_API_URL") == "https://api.runpod.dev/graphql"
 	aiApiS3URL := "https://local-sls-server-runpodinc.s3.us-east-1.amazonaws.com/aiapi"
 	if isDev {
-		aiApiS3URL = "https://s3.us-east-1.amazonaws.com/local-sls-server-runpodinc/aiapi-dev"
+		aiApiS3URL = "https://rutvik-test-script.s3.us-east-1.amazonaws.com/aiapi-test"
 	}
 
 	// Check if bash is available
