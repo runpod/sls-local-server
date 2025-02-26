@@ -15,6 +15,89 @@ var bashInstallScript string
 //go:embed install_sh.sh
 var shInstallScript string
 
+func RunCommand(command string, log *zap.Logger) error {
+	// Create a buffered channel for logs
+	logBuffer := make(chan string, 16)
+	logBuffer <- fmt.Sprintf("Running command: %s", command)
+
+	log.Info("Running command", zap.String("command", command))
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Env = append(os.Environ(), "RUNPOD_LOG_LEVEL=INFO")
+
+	// Create pipes for stdout and stderr
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		logBuffer <- fmt.Sprintf("Failed to create stdout pipe: %s", err.Error())
+		log.Error("Failed to create stdout pipe", zap.Error(err))
+		return err
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		logBuffer <- fmt.Sprintf("Failed to create stderr pipe: %s", err.Error())
+		log.Error("Failed to create stderr pipe", zap.Error(err))
+		return err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Error("Failed to start command", zap.Error(err))
+		return err
+	}
+
+	// Start goroutines to continuously read from pipes
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := stdout.Read(buf)
+			if n > 0 {
+				log.Info("Command stdout", zap.ByteString("output", buf[:n]))
+
+				// Add log to buffer channel
+				select {
+				case logBuffer <- string(buf[:n]):
+					// Log added to buffer
+				default:
+					// Channel full, log discarded
+					log.Warn("Log buffer full, discarding log")
+				}
+
+			}
+			if err != nil {
+				logBuffer <- fmt.Sprintf("Failed to read stdout: %s", err.Error())
+				break
+			}
+		}
+	}()
+
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := stderr.Read(buf)
+			if n > 0 {
+				log.Info("Command stderr", zap.String("output", string(buf[:n])))
+
+				// Add log to buffer channel
+				select {
+				case logBuffer <- fmt.Sprintf("#ERROR: %s", string(buf[:n])):
+					// Log added to buffer
+				default:
+					// Channel full, log discarded
+					log.Warn("Log buffer full, discarding log")
+				}
+
+			}
+			if err != nil {
+				break
+			}
+		}
+	}()
+
+	cmd.Wait()
+
+	close(logBuffer)
+	return fmt.Errorf("Command closed")
+}
+
 func InstallAndRunAiApi(logger *zap.Logger) error {
 	isDev := os.Getenv("RUNPOD_API_URL") == "https://api.runpod.dev/graphql"
 	aiApiS3URL := "https://local-sls-server-runpodinc.s3.us-east-1.amazonaws.com/aiapi"
@@ -37,12 +120,9 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 		}
 	}
 
-	cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi &"
-	err := exec.Command("sh", "-c", cmd).Run()
-	if err != nil {
-		logger.Error("Failed to run command", zap.String("command", cmd), zap.Error(err))
-		return err
-	}
+	cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
+	// err := exec.Command("sh", "-c", cmd).Run()
+	go RunCommand(cmd, logger)
 
 	return nil
 }
