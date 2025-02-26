@@ -448,7 +448,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 	}
 }
 
-func runCommand(command string) error {
+func RunCommand(command string) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 16)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
@@ -658,19 +658,9 @@ func main() {
 			return
 		}
 
-		go func() {
-			cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
-			err = runCommand(cmd)
-			if err != nil {
-				log.Error("Failed to run command", zap.String("command", cmd), zap.Error(err))
-				terminateIdePod()
-				return
-			}
-		}()
-
 		SYSTEM_INITIALIZED = true
 		cmd := fmt.Sprintf("PASSWORD=runpod code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"Welcome to the Runpod IDE\" --app-name \"Runpod IDE\" %s", *folder)
-		err = runCommand(cmd)
+		err = RunCommand(cmd)
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
 			terminateIdePod()
@@ -678,7 +668,7 @@ func main() {
 		}
 	} else {
 		go func() {
-			runCommand(*command)
+			RunCommand(*command)
 		}()
 		RunServer()
 	}

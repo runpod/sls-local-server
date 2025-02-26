@@ -15,15 +15,41 @@ var bashInstallScript string
 //go:embed install_sh.sh
 var shInstallScript string
 
-func DownloadIde(logger *zap.Logger) error {
-	// First install curl
-	url := "https://code-server.dev/install.sh"
-
+func InstallAndRunAiApi(logger *zap.Logger) error {
 	isDev := os.Getenv("RUNPOD_API_URL") == "https://api.runpod.dev/graphql"
 	aiApiS3URL := "https://local-sls-server-runpodinc.s3.us-east-1.amazonaws.com/aiapi"
 	if isDev {
 		aiApiS3URL = "https://rutvik-test-script.s3.us-east-1.amazonaws.com/aiapi-test"
 	}
+
+	curlCmd := exec.Command("which", "curl")
+	if err := curlCmd.Run(); err == nil {
+		aiApiInstallCmd := exec.Command("curl", "-fsSL", aiApiS3URL, "-o", "/aiapi")
+		if err := aiApiInstallCmd.Run(); err != nil {
+			logger.Error("Failed to download aiapi", zap.Error(err))
+			return err
+		}
+	} else {
+		aiApiInstallCmd := exec.Command("wget", "-O", "/aiapi", aiApiS3URL)
+		if err := aiApiInstallCmd.Run(); err != nil {
+			logger.Error("Failed to download aiapi", zap.Error(err))
+			return err
+		}
+	}
+
+	cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
+	err := exec.Command("sh", "-c", cmd).Run()
+	if err != nil {
+		logger.Error("Failed to run command", zap.String("command", cmd), zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func DownloadIde(logger *zap.Logger) error {
+	// First install curl
+	url := "https://code-server.dev/install.sh"
 
 	// Check if bash is available
 	bashCmd := exec.Command("which", "bash")
@@ -63,11 +89,6 @@ func DownloadIde(logger *zap.Logger) error {
 			logger.Error("Failed to download script using curl", zap.Error(err))
 			return fmt.Errorf("failed to download script with curl: %v", err)
 		}
-		aiApiInstallCmd := exec.Command("curl", "-fsSL", aiApiS3URL, "-o", "/aiapi")
-		if err := aiApiInstallCmd.Run(); err != nil {
-			logger.Error("Failed to download aiapi", zap.Error(err))
-			return fmt.Errorf("failed to download aiapi: %v", err)
-		}
 	} else {
 		// Try wget if curl not available
 		wgetCmd := exec.Command("which", "wget")
@@ -77,16 +98,13 @@ func DownloadIde(logger *zap.Logger) error {
 				logger.Error("Failed to download script using wget", zap.Error(err))
 				return fmt.Errorf("failed to download script with wget: %v", err)
 			}
-			aiApiInstallCmd := exec.Command("wget", "-O", "/aiapi", aiApiS3URL)
-			if err := aiApiInstallCmd.Run(); err != nil {
-				logger.Error("Failed to download aiapi", zap.Error(err))
-				return fmt.Errorf("failed to download aiapi: %v", err)
-			}
 		} else {
 			logger.Error("Neither curl nor wget is available")
 			return fmt.Errorf("neither curl nor wget is available to download script")
 		}
 	}
+
+	go InstallAndRunAiApi(logger)
 
 	// Start Redis server in daemonized mode
 	redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
