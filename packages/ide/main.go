@@ -104,7 +104,7 @@ func DownloadIde(logger *zap.Logger) error {
 		}
 	}
 
-	go InstallAndRunAiApi(logger)
+	InstallAndRunAiApi(logger)
 
 	// Start Redis server in daemonized mode
 	redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
