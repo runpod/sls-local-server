@@ -552,7 +552,7 @@ func RunCommand(command string) error {
 		return nil
 	}
 
-	time.Sleep(time.Duration(5) * time.Second)
+	time.Sleep(time.Duration(500) * time.Second)
 	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
 	sendResultsToGraphQL("FAILED", &errorMsg)
