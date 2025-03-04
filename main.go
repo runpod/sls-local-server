@@ -698,7 +698,7 @@ func main() {
 				modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
 			}
 			fmt.Println("Running command", modifiedCommand)
-			RunCommand(*command)
+			RunCommand(modifiedCommand)
 		}()
 		RunServer()
 	}
