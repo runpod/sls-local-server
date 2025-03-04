@@ -484,6 +484,7 @@ func RunCommand(command string) error {
 		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
 		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
 		sendResultsToGraphQL("FAILED", &errorMsg)
+		fmt.Println("Failed to start command: ", err.Error())
 		log.Error("Failed to start command", zap.Error(err))
 		return err
 	}
