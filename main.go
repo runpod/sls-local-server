@@ -678,7 +678,14 @@ func main() {
 		}
 	} else {
 		go func() {
-			RunCommand(*command)
+			var modifiedCommand string
+			if command != nil {
+				modifiedCommand = *command
+				modifiedCommand = strings.Replace(modifiedCommand, "/bin/sh -c ", "", 1)
+				modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
+			}
+			fmt.Println("Running command", modifiedCommand)
+			RunCommand(modifiedCommand)
 		}()
 		RunServer()
 	}
