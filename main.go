@@ -552,9 +552,10 @@ func RunCommand(command string) error {
 		return nil
 	}
 
-	fmt.Println("Command closed")
 	close(logBuffer)
-	return fmt.Errorf("Command closed")
+	errorMsg := "Command closed. Please view the logs for more information."
+	sendResultsToGraphQL("FAILED", &errorMsg)
+	return nil
 }
 
 func RunHealthServer() {
