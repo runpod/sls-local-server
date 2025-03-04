@@ -454,7 +454,15 @@ func RunCommand(command string) error {
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
 
 	log.Info("Running command", zap.String("command", command))
-	cmd := exec.Command("sh", "-c", command)
+	// Split the command string into command and arguments
+	parts := strings.Fields(command)
+	var cmd *exec.Cmd
+	if len(parts) > 0 {
+		cmd = exec.Command(parts[0], parts[1:]...)
+	} else {
+		log.Error("Empty command provided")
+		return fmt.Errorf("empty command provided")
+	}
 	cmd.Env = append(os.Environ(), "RUNPOD_LOG_LEVEL=INFO")
 
 	// Create pipes for stdout and stderr
