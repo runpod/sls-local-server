@@ -450,7 +450,7 @@ func sendLogsToTinyBird(logBuffer chan string) {
 	}
 }
 
-func RunCommand(command string) error {
+func RunCommand(command string, ide bool) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 16)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
@@ -467,6 +467,9 @@ func RunCommand(command string) error {
 		return fmt.Errorf("empty command provided")
 	}
 	cmd.Env = append(os.Environ(), "RUNPOD_LOG_LEVEL=INFO")
+	if ide {
+		cmd.Env = append(cmd.Env, "PASSWORD=runpod")
+	}
 
 	// Create pipes for stdout and stderr
 	stdout, err := cmd.StdoutPipe()
@@ -680,8 +683,8 @@ func main() {
 		}
 
 		SYSTEM_INITIALIZED = true
-		cmd := fmt.Sprintf("PASSWORD=runpod code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"Welcome to the Runpod IDE\" --app-name \"Runpod IDE\" %s", *folder)
-		err = RunCommand(cmd)
+		cmd := fmt.Sprintf("code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"Welcome to the Runpod IDE\" --app-name \"Runpod IDE\" %s", *folder)
+		err = RunCommand(cmd, true)
 		if err != nil {
 			log.Error("Failed to run command", zap.Error(err))
 			terminateIdePod()
@@ -696,7 +699,7 @@ func main() {
 				modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
 			}
 			fmt.Println("Running command", modifiedCommand)
-			RunCommand(modifiedCommand)
+			RunCommand(modifiedCommand, false)
 		}()
 		RunServer()
 	}
