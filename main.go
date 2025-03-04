@@ -152,6 +152,8 @@ func sendResultsToGraphQL(status string, errorReason *string) {
 	gqlMutex.Lock()
 	defer gqlMutex.Unlock()
 
+	time.Sleep(time.Duration(100) * time.Second)
+
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
 	runpodTestId := os.Getenv("RUNPOD_TEST_ID")
@@ -547,7 +549,7 @@ func RunCommand(command string) error {
 		return nil
 	}
 
-	time.Sleep(time.Duration(500) * time.Second)
+	time.Sleep(time.Duration(10) * time.Second)
 	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
 	sendResultsToGraphQL("FAILED", &errorMsg)
