@@ -458,6 +458,7 @@ func RunCommand(command string) error {
 	parts := strings.Fields(command)
 	var cmd *exec.Cmd
 	if len(parts) > 0 {
+		fmt.Println("split into strings", parts)
 		cmd = exec.Command(parts[0], parts[1:]...)
 	} else {
 		log.Error("Empty command provided")
