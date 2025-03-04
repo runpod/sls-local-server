@@ -540,7 +540,12 @@ func RunCommand(command string) error {
 		}
 	}()
 
-	cmd.Wait()
+	if err := cmd.Wait(); err != nil {
+		errorMsg := fmt.Sprintf("Command closed: %s", err.Error())
+		fmt.Println("Command closed: ", errorMsg)
+		sendResultsToGraphQL("FAILED", &errorMsg)
+		return nil
+	}
 
 	close(logBuffer)
 	return fmt.Errorf("Command closed")
@@ -685,7 +690,7 @@ func main() {
 				modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
 			}
 			fmt.Println("Running command", modifiedCommand)
-			RunCommand(modifiedCommand)
+			RunCommand(*command)
 		}()
 		RunServer()
 	}
