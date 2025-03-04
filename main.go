@@ -524,11 +524,6 @@ func RunCommand(command string) error {
 			if n > 0 {
 				log.Info("Command stderr", zap.String("output", string(buf[:n])))
 
-				if strings.Contains(string(buf[:n]), "Failed to read stdout: EOF") {
-					errorMsg := "Command closed"
-					sendResultsToGraphQL("FAILED", &errorMsg)
-					return
-				}
 				// Add log to buffer channel
 				select {
 				case logBuffer <- fmt.Sprintf("#ERROR: %s", string(buf[:n])):
@@ -556,6 +551,7 @@ func RunCommand(command string) error {
 	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
 	sendResultsToGraphQL("FAILED", &errorMsg)
+
 	return nil
 }
 
