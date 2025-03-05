@@ -3,6 +3,7 @@ package common
 import (
 	"os"
 	"os/exec"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -36,6 +37,9 @@ func InstallAndRunAiApi(logger *zap.Logger, test bool) error {
 	} else {
 		RunCommand(cmd, false, logger)
 	}
+
+	// kind of mandatory to wait for the aiapi to start
+	time.Sleep(time.Duration(30) * time.Second)
 
 	return nil
 }
