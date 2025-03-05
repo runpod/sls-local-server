@@ -3,17 +3,81 @@ package ide
 import (
 	_ "embed"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
+	"sls-local-server/packages/testbeds"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+var slash = "/"
+var folder = &slash
+var SYSTEM_INITIALIZED = false
 
 //go:embed install_bash.sh
 var bashInstallScript string
 
 //go:embed install_sh.sh
 var shInstallScript string
+
+type Handler struct {
+	log *zap.Logger
+}
+
+func NewHandler(log *zap.Logger) *Handler {
+	return &Handler{
+		log: log,
+	}
+}
+
+func RunHealthServer(log *zap.Logger) {
+	gin.SetMode(gin.ReleaseMode)
+	h := NewHandler(log)
+
+	r := gin.New()
+	// Add recovery middleware
+	r.Use(gin.Recovery())
+	// Add logging middleware
+	r.Use(testbeds.LoggerMiddleware(log))
+
+	r.GET("/health", h.Health)
+
+	if err := r.Run(":" + "8079"); err != nil {
+		log.Fatal("Failed to start server", zap.Error(err))
+	}
+}
+
+func (h *Handler) Health(c *gin.Context) {
+	if !SYSTEM_INITIALIZED {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "unhealthy",
+		})
+	}
+
+	// Check the heartbeat file for code-server
+	heartbeatFile := "/root/.local/share/code-server/heartbeat"
+	fileInfo, err := os.Stat(heartbeatFile)
+
+	var heartbeat time.Time
+	if err == nil {
+		// Store the last modified time if file exists
+		heartbeat = fileInfo.ModTime()
+		h.log.Info("Code-server heartbeat found", zap.Time("lastModified", heartbeat))
+	} else {
+		// If file doesn't exist or can't be accessed
+		h.log.Warn("Could not access code-server heartbeat file", zap.Error(err))
+		heartbeat = time.Time{} // Zero time
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "healthy",
+		"folder":    *folder,
+		"heartbeat": heartbeat,
+	})
+}
 
 func RunCommand(command string, log *zap.Logger) error {
 	// Create a buffered channel for logs
@@ -247,4 +311,39 @@ func DownloadIde(logger *zap.Logger) error {
 	}
 
 	return nil
+}
+
+func TerminateIdePod(log *zap.Logger) {
+	runpodPodIDEJwt := os.Getenv("RUNPOD_IDE_POD_JWT")
+	webhookUrl := os.Getenv("RUNPOD_IDE_POD_WEBHOOK_URL")
+
+	if runpodPodIDEJwt == "" || webhookUrl == "" {
+		log.Error("RUNPOD_IDE_POD_JWT or RUNPOD_IDE_POD_WEBHOOK_URL not set")
+		return
+	}
+
+	req, err := http.NewRequest("POST", webhookUrl, nil)
+	if err != nil {
+		log.Error("Failed to create request", zap.Error(err))
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+runpodPodIDEJwt)
+
+	// send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error("Failed to send request", zap.Error(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Error("Request failed", zap.Int("status", resp.StatusCode))
+		return
+	}
+
+	time.Sleep(time.Duration(300) * time.Second)
 }
