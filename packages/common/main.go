@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -146,6 +147,14 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 			payload := strings.Join(records, "\n")
 
 			go func(payload string) {
+				// Defer recovery from any panics that might occur during the HTTP request
+				defer func() {
+					if r := recover(); r != nil {
+						log.Error("Recovered from panic in log sending goroutine",
+							zap.Any("panic", r),
+							zap.String("stack", string(debug.Stack())))
+					}
+				}()
 				// Create and send request
 				req, err := http.NewRequest("POST", url, strings.NewReader(payload))
 				if err == nil {
