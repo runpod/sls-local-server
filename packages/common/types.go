@@ -19,11 +19,12 @@ type ExpectedOutput struct {
 }
 
 type Result struct {
-	ID            int    `json:"id"`
-	Name          string `json:"name,omitempty"`
-	Status        string `json:"status"`
-	Error         string `json:"error"`
-	ExecutionTime int64  `json:"executionTime"`
+	ID            int         `json:"id"`
+	Name          string      `json:"name,omitempty"`
+	Status        string      `json:"status"`
+	Error         interface{} `json:"error"`
+	ExecutionTime int64       `json:"executionTime"`
+	Output        interface{} `json:"output,omitempty"`
 }
 
 var results []Result

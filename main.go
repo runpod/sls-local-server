@@ -65,6 +65,6 @@ func main() {
 			fmt.Println("Running command", modifiedCommand)
 			common.RunCommand(modifiedCommand, false, log)
 		}()
-		testbeds.RunServer(log)
+		testbeds.RunTests(log)
 	}
 }
