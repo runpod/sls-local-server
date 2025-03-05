@@ -162,20 +162,21 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 					req.Header.Set("Content-Type", "text/plain")
 
 					client := &http.Client{Timeout: 2 * time.Second}
-					resp, err := client.Do(req)
+					_, err := client.Do(req)
 					if err != nil {
 						log.Error("Failed to send logs to tinybird", zap.Error(err))
-					} else if resp.StatusCode > 200 {
-						body, err := io.ReadAll(resp.Body)
-						if err != nil {
-							log.Error("Failed to read response body", zap.Error(err))
-							return
-						}
-						log.Error("Tinybird request failed",
-							zap.Int("status", resp.StatusCode),
-							zap.String("response", string(body)))
-						resp.Body.Close()
 					}
+					// } else if resp.StatusCode > 200 {
+					// 	// body, err := io.ReadAll(resp.Body)
+					// 	// if err != nil {
+					// 	// 	log.Error("Failed to read response body", zap.Error(err))
+					// 	// 	return
+					// 	// }
+					// 	// log.Error("Tinybird request failed",
+					// 	// 	zap.Int("status", resp.StatusCode),
+					// 	// 	zap.String("response", string(body)))
+					// 	// resp.Body.Close()
+					// }
 				}
 
 				buffer = make([]map[string]interface{}, 0)
@@ -202,15 +203,9 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 			req.Header.Set("Content-Type", "text/plain")
 
 			client := &http.Client{Timeout: 2 * time.Second}
-			resp, err := client.Do(req)
+			_, err := client.Do(req)
 			if err != nil {
 				log.Error("Failed to send final logs to tinybird", zap.Error(err))
-			} else if resp.StatusCode > 200 {
-				body, _ := io.ReadAll(resp.Body)
-				log.Error("Final tinybird request failed",
-					zap.Int("status", resp.StatusCode),
-					zap.String("response", string(body)))
-				resp.Body.Close()
 			}
 		}
 	}
