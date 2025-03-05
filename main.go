@@ -7,7 +7,6 @@ import (
 	"sls-local-server/packages/ide"
 	"sls-local-server/packages/testbeds"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -57,17 +56,17 @@ func main() {
 		}
 	} else {
 		go func() {
-			var modifiedCommand string
-			if command != nil {
-				modifiedCommand = *command
-				modifiedCommand = strings.Replace(modifiedCommand, "/bin/sh -c ", "", 1)
-				modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
-			}
-			fmt.Println("Running command", modifiedCommand)
-			common.RunCommand(modifiedCommand, false, log)
+			fmt.Println("Running tests")
+			testbeds.RunTests(log)
 		}()
-		fmt.Println("Running tests")
-		time.Sleep(time.Duration(10) * time.Second)
-		testbeds.RunTests(log)
+
+		var modifiedCommand string
+		if command != nil {
+			modifiedCommand = *command
+			modifiedCommand = strings.Replace(modifiedCommand, "/bin/sh -c ", "", 1)
+			modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
+		}
+		fmt.Println("Running command", modifiedCommand)
+		common.RunCommand(modifiedCommand, false, log)
 	}
 }

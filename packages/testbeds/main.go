@@ -200,13 +200,10 @@ func startTests(log *zap.Logger) {
 
 func RunTests(log *zap.Logger) {
 	log.Info("Starting server")
-	time.Sleep(time.Duration(10) * time.Second)
 	parseTestConfig(log)
 	log.Info("Parsed test config")
-	time.Sleep(time.Duration(10) * time.Second)
 	gin.SetMode(gin.ReleaseMode)
 	common.InstallAndRunAiApi(log)
 	log.Info("Installed and ran AI API")
-	time.Sleep(time.Duration(10) * time.Second)
 	startTests(log)
 }

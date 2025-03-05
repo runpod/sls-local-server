@@ -30,7 +30,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 	if ide {
 		cmd.Env = append(cmd.Env, "PASSWORD=runpod")
 	} else {
-		cmd.Env = append(cmd.Env, "RUNPOD_ENDPOINT_BASE_URL=http://0.0.0.0:80/IDE/v2")
+		cmd.Env = append(cmd.Env, "RUNPOD_ENDPOINT_BASE_URL=http://0.0.0.0:80/v2/IDE/v2")
 		cmd.Env = append(cmd.Env, "RUNPOD_WEBHOOK_GET_JOB=http://0.0.0.0:80/v2/IDE/job-take/$RUNPOD_POD_ID")
 		cmd.Env = append(cmd.Env, "RUNPOD_WEBHOOK_POST_OUTPUT=http://0.0.0.0:80/v2/IDE/job-done/$RUNPOD_POD_ID/$ID")
 	}
