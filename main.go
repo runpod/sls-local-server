@@ -7,6 +7,7 @@ import (
 	"sls-local-server/packages/ide"
 	"sls-local-server/packages/testbeds"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -65,6 +66,8 @@ func main() {
 			fmt.Println("Running command", modifiedCommand)
 			common.RunCommand(modifiedCommand, false, log)
 		}()
+		fmt.Println("Running tests")
+		time.Sleep(time.Duration(10) * time.Second)
 		testbeds.RunTests(log)
 	}
 }
