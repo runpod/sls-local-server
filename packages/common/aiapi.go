@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func InstallAndRunAiApi(logger *zap.Logger) error {
+func InstallAndRunAiApi(logger *zap.Logger, test bool) error {
 	isDev := os.Getenv("RUNPOD_API_URL") == "https://api.runpod.dev/graphql"
 	aiApiS3URL := "https://local-sls-server-runpodinc.s3.us-east-1.amazonaws.com/aiapi"
 	if isDev {
@@ -31,7 +31,11 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 
 	cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AGENT_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
 	// err := exec.Command("sh", "-c", cmd).Run()
-	go RunCommand(cmd, false, logger)
+	if !test {
+		go RunCommand(cmd, false, logger)
+	} else {
+		RunCommand(cmd, false, logger)
+	}
 
 	return nil
 }
