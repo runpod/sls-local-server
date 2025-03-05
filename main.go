@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"sls-local-server/packages/common"
 	"sls-local-server/packages/ide"
 	"sls-local-server/packages/testbeds"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -59,6 +61,17 @@ func main() {
 			fmt.Println("Running tests")
 			testbeds.RunTests(log)
 		}()
+
+		for {
+			time.Sleep(time.Duration(1) * time.Second)
+			aiApiStatus, err := http.Get("http://localhost:80/ping")
+			if err != nil {
+				continue
+			}
+			if aiApiStatus.StatusCode == 200 {
+				break
+			}
+		}
 
 		var modifiedCommand string
 		if command != nil {

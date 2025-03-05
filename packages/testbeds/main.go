@@ -217,6 +217,7 @@ func RunTests(log *zap.Logger) {
 		}
 	}
 
+	time.Sleep(time.Duration(1) * time.Second)
 	log.Info("Installed and ran AI API")
 	startTests(log)
 }
