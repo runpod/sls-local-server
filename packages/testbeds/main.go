@@ -204,6 +204,19 @@ func RunTests(log *zap.Logger) {
 	log.Info("Parsed test config")
 	gin.SetMode(gin.ReleaseMode)
 	common.InstallAndRunAiApi(log, false)
+
+	// kind of mandatory to wait for the aiapi to start
+	for {
+		time.Sleep(time.Duration(1) * time.Second)
+		aiApiStatus, err := http.Get("http://localhost:80/ping")
+		if err != nil {
+			continue
+		}
+		if aiApiStatus.StatusCode == 200 {
+			break
+		}
+	}
+
 	log.Info("Installed and ran AI API")
 	startTests(log)
 }
