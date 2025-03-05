@@ -98,7 +98,7 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Logger) {
 	// Start goroutine to collect and send logs
 	buffer := make([]map[string]interface{}, 0)
-	tinybirdToken := os.Getenv("TINYBIRD_TOKEN")
+	tinybirdToken := os.Getenv("RUNPOD_TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 
 	testNumber := 7081
@@ -165,17 +165,6 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 					if err != nil {
 						log.Error("Failed to send logs to tinybird", zap.Error(err))
 					}
-					// } else if resp.StatusCode > 200 {
-					// 	// body, err := io.ReadAll(resp.Body)
-					// 	// if err != nil {
-					// 	// 	log.Error("Failed to read response body", zap.Error(err))
-					// 	// 	return
-					// 	// }
-					// 	// log.Error("Tinybird request failed",
-					// 	// 	zap.Int("status", resp.StatusCode),
-					// 	// 	zap.String("response", string(body)))
-					// 	// resp.Body.Close()
-					// }
 				}
 
 				buffer = make([]map[string]interface{}, 0)
