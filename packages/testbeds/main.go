@@ -48,7 +48,9 @@ func parseTestConfig(log *zap.Logger) {
 
 		log.Info("Parsed test config", zap.Any("testConfig", testConfig))
 		for i, test := range testConfig {
+			testWrapped := map[string]interface{}{"input": test}
 			testConfig[i] = test
+			testConfig[i].Input = testWrapped
 			testConfig[i].ID = &i
 			if test.Timeout == nil {
 				threeHundred := 30 * 1000
