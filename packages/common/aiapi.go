@@ -29,7 +29,7 @@ func InstallAndRunAiApi(logger *zap.Logger, test bool) error {
 		}
 	}
 
-	cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AGENT_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
+	cmd := "chmod +x /aiapi && /aiapi"
 	// err := exec.Command("sh", "-c", cmd).Run()
 	if !test {
 		go RunCommand(cmd, false, logger)
