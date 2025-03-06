@@ -9,7 +9,7 @@ import (
 )
 
 func InstallAndRunAiApi(logger *zap.Logger) error {
-	if err := InstallScript(logger); err != nil {
+	if err := installScript(logger); err != nil {
 		logger.Error("Failed to install script", zap.Error(err))
 		return fmt.Errorf("failed to install script: %v", err)
 	}
