@@ -69,7 +69,8 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 		for {
 			n, err := stdout.Read(buf)
 			if n > 0 {
-				log.Info("Command stdout", zap.ByteString("output", buf[:n]))
+				// log.Info("Command stdout", zap.ByteString("output", buf[:n]))
+				fmt.Println("INFO: ",string(buf[:n]))
 
 				// Add log to buffer channel
 				select {
@@ -93,7 +94,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 		for {
 			n, err := stderr.Read(buf)
 			if n > 0 {
-				log.Info("Command stderr", zap.String("output", string(buf[:n])))
+				fmt.Println("ERROR: ",string(buf[:n]))
 
 				// Add log to buffer channel
 				select {
