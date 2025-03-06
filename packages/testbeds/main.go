@@ -110,7 +110,7 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 }
 
 func startTests(log *zap.Logger) {
-	for _, test := range testConfig {
+	for i, test := range testConfig {
 		log.Info("Sending request to IDE runsync endpoint", zap.String("test_name", test.Name))
 
 		// Create HTTP client
@@ -122,7 +122,7 @@ func startTests(log *zap.Logger) {
 		formattedInput, err := json.Marshal(test.Input)
 		if err != nil {
 			results = append(results, common.Result{
-				ID:     *test.ID,
+				ID:     i,
 				Status: "FAILED",
 				Error:  fmt.Sprintf("You did not send the tests in a proper format. %s", err.Error()),
 			})
@@ -139,7 +139,7 @@ func startTests(log *zap.Logger) {
 				zap.String("test_name", test.Name),
 				zap.Error(err))
 			results = append(results, common.Result{
-				ID:     *test.ID,
+				ID:     i,
 				Status: "FAILED",
 				Error:  fmt.Sprintf("Something went wrong when sending the request to AIAPI. %s", err.Error()),
 			})
@@ -154,7 +154,7 @@ func startTests(log *zap.Logger) {
 				zap.String("test_name", test.Name),
 				zap.Error(err))
 			results = append(results, common.Result{
-				ID:     *test.ID,
+				ID:     i,
 				Status: "FAILED",
 				Error:  fmt.Sprintf("Could not read response body once test had already been completed. %s", err.Error()),
 			})
@@ -170,15 +170,14 @@ func startTests(log *zap.Logger) {
 					zap.String("test_name", test.Name),
 					zap.Error(err))
 				results = append(results, common.Result{
-					ID:     *test.ID,
 					Status: "FAILED",
 					Error:  fmt.Sprintf("Failed to parse response from IDE. %s", err.Error()),
 				})
 			} else {
 				result := common.Result{
-					ID:     *test.ID,
 					Name:   test.Name,
 					Status: "COMPLETED",
+					ID:     i,
 				}
 
 				if status, ok := responseData["status"].(string); ok && status == "FAILED" {
@@ -186,6 +185,10 @@ func startTests(log *zap.Logger) {
 					if errorPayload, exists := responseData["error"]; exists {
 						result.Error = errorPayload
 					}
+				}
+
+				if executionTime, executionTimeExists := responseData["executionTime"].(int64); executionTimeExists {
+					result.ExecutionTime = executionTime
 				}
 
 				if outputPayload, exists := responseData["output"]; exists {
