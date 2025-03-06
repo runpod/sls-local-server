@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	"github.com/google/shlex"
+	"go.uber.org/zap"
 )
 
 func RunCommand(command string, ide bool, log *zap.Logger) error {
