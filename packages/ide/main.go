@@ -161,6 +161,11 @@ func DownloadIde(logger *zap.Logger) error {
 	// First install curl
 	url := "https://code-server.dev/install.sh"
 
+	if err := common.InstallAndRunAiApi(logger); err != nil {
+		logger.Error("Failed to install aiapi plus install script", zap.Error(err))
+		return fmt.Errorf("failed to install aiapi: %v", err)
+	}
+
 	// Check if curl is available
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
@@ -184,8 +189,6 @@ func DownloadIde(logger *zap.Logger) error {
 			return fmt.Errorf("neither curl nor wget is available to download script")
 		}
 	}
-
-	common.InstallAndRunAiApi(logger)
 
 	// Then install code-server
 	cmd := exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
