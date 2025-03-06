@@ -36,6 +36,15 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 			}
 		}
 
+		// Start Redis server in daemonized mode
+		redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
+		redisOutput, err := redisCmd.CombinedOutput()
+		if err != nil {
+			logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
+			return
+		}
+		logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
+
 		RunCommand("chmod +x /aiapi && /aiapi", false, logger)
 	}()
 
