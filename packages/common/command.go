@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"github.com/google/shlex"
 )
 
 func RunCommand(command string, ide bool, log *zap.Logger) error {
@@ -17,11 +18,15 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 
 	log.Info("Running command", zap.String("command", command))
 	// Split the command string into command and arguments
-	parts := strings.Fields(command)
+	args, err := shlex.Split(command)
+	if err != nil {
+		log.Error("Failed to split command", zap.Error(err))
+		return err
+	}
 	var cmd *exec.Cmd
-	if len(parts) > 0 {
-		fmt.Println("split into strings", parts)
-		cmd = exec.Command(parts[0], parts[1:]...)
+	if len(args) > 0 {
+		fmt.Println("split into strings", args)
+		cmd = exec.Command(args[0], args[1:]...)
 	} else {
 		log.Error("Empty command provided")
 		return fmt.Errorf("empty command provided")
