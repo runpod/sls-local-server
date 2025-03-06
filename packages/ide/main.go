@@ -18,12 +18,6 @@ var slash = "/"
 var folder = &slash
 var SYSTEM_INITIALIZED = false
 
-//go:embed install_bash.sh
-var bashInstallScript string
-
-//go:embed install_sh.sh
-var shInstallScript string
-
 type Handler struct {
 	log *zap.Logger
 }
@@ -167,35 +161,6 @@ func DownloadIde(logger *zap.Logger) error {
 	// First install curl
 	url := "https://code-server.dev/install.sh"
 
-	// Check if bash is available
-	bashCmd := exec.Command("which", "bash")
-	shellType := "sh"
-	if err := bashCmd.Run(); err == nil {
-		shellType = "bash"
-	}
-
-	// Determine which script to use based on shell type
-	scriptContent := shInstallScript
-	if shellType == "bash" {
-		scriptContent = bashInstallScript
-	}
-
-	// Write the script to a file
-	err := os.WriteFile("install_bash.sh", []byte(scriptContent), 0755)
-	if err != nil {
-		logger.Error("Failed to write install script to file", zap.Error(err))
-		return fmt.Errorf("failed to write install script to file: %v", err)
-	}
-
-	// Execute the script
-	cmd := exec.Command("./install_bash.sh")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		logger.Error("Error executing install script", zap.Error(err))
-		return fmt.Errorf("failed to execute install script: %v", err)
-	}
-	logger.Info("Script output", zap.String("output", string(output)))
-
 	// Check if curl is available
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
@@ -220,7 +185,7 @@ func DownloadIde(logger *zap.Logger) error {
 		}
 	}
 
-	common.InstallAndRunAiApi(logger, false)
+	common.InstallAndRunAiApi(logger)
 
 	// Start Redis server in daemonized mode
 	redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
@@ -232,7 +197,7 @@ func DownloadIde(logger *zap.Logger) error {
 	logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
 
 	// Then install code-server
-	cmd = exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
+	cmd := exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to create stdout pipe", zap.Error(err))

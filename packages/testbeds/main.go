@@ -203,7 +203,7 @@ func RunTests(log *zap.Logger) {
 	parseTestConfig(log)
 	log.Info("Parsed test config")
 	gin.SetMode(gin.ReleaseMode)
-	common.InstallAndRunAiApi(log, false)
+	common.InstallAndRunAiApi(log)
 
 	// kind of mandatory to wait for the aiapi to start
 	for {
