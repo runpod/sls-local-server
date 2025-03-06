@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/google/shlex"
 	"go.uber.org/zap"
 )
 
@@ -17,19 +16,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 
 	log.Info("Running command", zap.String("command", command))
 	// Split the command string into command and arguments
-	args, err := shlex.Split(command)
-	if err != nil {
-		log.Error("Failed to split command", zap.Error(err))
-		return err
-	}
-	var cmd *exec.Cmd
-	if len(args) > 0 {
-		fmt.Println("split into strings", args)
-		cmd = exec.Command(args[0], args[1:]...)
-	} else {
-		log.Error("Empty command provided")
-		return fmt.Errorf("empty command provided")
-	}
+	cmd := exec.Command("sh", "-c", command)
 	cmd.Env = append(os.Environ(), "RUNPOD_LOG_LEVEL=INFO")
 	if ide {
 		cmd.Env = append(cmd.Env, "PASSWORD=runpod")
