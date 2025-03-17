@@ -144,8 +144,6 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 			payload := strings.Join(records, "\n")
 			fmt.Println("payload: ### ", payload)
 
-			return
-
 			go func(payload string) {
 				// Defer recovery from any panics that might occur during the HTTP request
 				defer func() {
