@@ -41,8 +41,6 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 	GqlMutex.Lock()
 	defer GqlMutex.Unlock()
 
-	time.Sleep(time.Duration(30) * time.Second)
-
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
 	runpodTestId := os.Getenv("RUNPOD_TEST_ID")

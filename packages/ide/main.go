@@ -275,6 +275,4 @@ func TerminateIdePod(log *zap.Logger) {
 		log.Error("Request failed", zap.Int("status", resp.StatusCode))
 		return
 	}
-
-	time.Sleep(time.Duration(300) * time.Second)
 }
