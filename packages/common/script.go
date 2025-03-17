@@ -30,14 +30,14 @@ func installScript(logger *zap.Logger) error {
 	}
 
 	// Write the script to a file
-	err := os.WriteFile("install_bash.sh", []byte(scriptContent), 0755)
+	err := os.WriteFile("/bin/install_bash.sh", []byte(scriptContent), 0755)
 	if err != nil {
 		logger.Error("Failed to write install script to file", zap.Error(err))
 		return fmt.Errorf("failed to write install script to file: %v", err)
 	}
 
 	// Execute the script
-	cmd := exec.Command("./install_bash.sh")
+	cmd := exec.Command("/bin/install_bash.sh")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Error("Error executing install script", zap.Error(err))

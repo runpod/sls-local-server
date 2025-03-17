@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"sls-local-server/packages/common"
 	"sls-local-server/packages/ide"
 	"sls-local-server/packages/testbeds"
@@ -35,6 +36,13 @@ func main() {
 		return
 	}
 	defer log.Sync()
+
+	if _, err := os.Stat("/bin"); os.IsNotExist(err) {
+		log.Info("Creating bin directory")
+		if err := os.Mkdir("/bin", 0755); err != nil {
+			log.Error("Failed to create bin directory", zap.Error(err))
+		}
+	}
 
 	if aiApiIde != nil && *aiApiIde == "true" {
 		go func() {

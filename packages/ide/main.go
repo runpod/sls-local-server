@@ -170,7 +170,7 @@ func DownloadIde(logger *zap.Logger) error {
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
 		// Use curl to download
-		cmd := exec.Command("curl", "-fsSL", url, "-o", "install.sh")
+		cmd := exec.Command("curl", "-fsSL", url, "-o", "/bin/install.sh")
 		if err := cmd.Run(); err != nil {
 			logger.Error("Failed to download script using curl", zap.Error(err))
 			return fmt.Errorf("failed to download script with curl: %v", err)
@@ -179,7 +179,7 @@ func DownloadIde(logger *zap.Logger) error {
 		// Try wget if curl not available
 		wgetCmd := exec.Command("which", "wget")
 		if err := wgetCmd.Run(); err == nil {
-			cmd := exec.Command("wget", "-O", "install.sh", url)
+			cmd := exec.Command("wget", "-O", "/bin/install.sh", url)
 			if err := cmd.Run(); err != nil {
 				logger.Error("Failed to download script using wget", zap.Error(err))
 				return fmt.Errorf("failed to download script with wget: %v", err)
@@ -191,7 +191,7 @@ func DownloadIde(logger *zap.Logger) error {
 	}
 
 	// Then install code-server
-	cmd := exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
+	cmd := exec.Command("sh", "-c", "chmod +x /bin/install.sh && /bin/install.sh")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to create stdout pipe", zap.Error(err))

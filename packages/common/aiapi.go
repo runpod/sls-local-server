@@ -23,13 +23,13 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 
 		curlCmd := exec.Command("which", "curl")
 		if err := curlCmd.Run(); err == nil {
-			aiApiInstallCmd := exec.Command("curl", "-fsSL", aiApiS3URL, "-o", "/aiapi")
+			aiApiInstallCmd := exec.Command("curl", "-fsSL", aiApiS3URL, "-o", "/bin/aiapi")
 			if err := aiApiInstallCmd.Run(); err != nil {
 				logger.Error("Failed to download aiapi", zap.Error(err))
 				return
 			}
 		} else {
-			aiApiInstallCmd := exec.Command("wget", "-O", "/aiapi", aiApiS3URL)
+			aiApiInstallCmd := exec.Command("wget", "-O", "/bin/aiapi", aiApiS3URL)
 			if err := aiApiInstallCmd.Run(); err != nil {
 				logger.Error("Failed to download aiapi", zap.Error(err))
 				return
