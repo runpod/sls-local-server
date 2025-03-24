@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"sls-local-server/packages/common"
 	"sls-local-server/packages/ide"
 	"sls-local-server/packages/testbeds"
 	"strings"
+	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -54,22 +56,43 @@ func main() {
 			initializeIDE = false
 		}
 
+		err := ide.DownloadIde(log, initializeIDE)
+		if err != nil {
+			log.Error("Failed to download ide", zap.Error(err))
+			ide.TerminateIdePod(log)
+			return
+		}
+
 		if initializeIDE {
-			err := ide.DownloadIde(log)
+			ide.SYSTEM_INITIALIZED = true
+			cmd := fmt.Sprintf("code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"RunpodIDE\" --app-name \"RunpodIDE\" %s", *folder)
+			err = common.RunCommand(cmd, true, log)
 			if err != nil {
-				log.Error("Failed to download ide", zap.Error(err))
+				log.Error("Failed to run command", zap.Error(err))
 				ide.TerminateIdePod(log)
 				return
 			}
-		}
+		} else {
+			// Create a blocking channel to prevent the program from exiting
+			log.Info("IDE initialization skipped, creating blocking channel")
+			blockingChannel := make(chan struct{})
 
-		ide.SYSTEM_INITIALIZED = true
-		cmd := fmt.Sprintf("code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"RunpodIDE\" --app-name \"RunpodIDE\" %s", *folder)
-		err = common.RunCommand(cmd, true, log)
-		if err != nil {
-			log.Error("Failed to run command", zap.Error(err))
-			ide.TerminateIdePod(log)
-			return
+			// Start a goroutine to handle signals for graceful shutdown
+			go func() {
+				sigChan := make(chan os.Signal, 1)
+				signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+				// Wait for termination signal
+				sig := <-sigChan
+				log.Info("Received signal, shutting down", zap.String("signal", sig.String()))
+
+				// Close the blocking channel to allow program to exit
+				close(blockingChannel)
+			}()
+
+			// Block until channel is closed
+			<-blockingChannel
+			log.Info("Exiting program")
 		}
 	} else {
 		go func() {

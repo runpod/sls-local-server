@@ -157,13 +157,17 @@ func RunCommand(command string, log *zap.Logger) error {
 	return fmt.Errorf("Command closed")
 }
 
-func DownloadIde(logger *zap.Logger) error {
+func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 	// First install curl
 	url := "https://code-server.dev/install.sh"
 
 	if err := common.InstallAndRunAiApi(logger); err != nil {
 		logger.Error("Failed to install aiapi plus install script", zap.Error(err))
 		return fmt.Errorf("failed to install aiapi: %v", err)
+	}
+
+	if !initializeIDE {
+		return nil
 	}
 
 	// Check if curl is available
