@@ -49,11 +49,18 @@ func main() {
 			ide.RunHealthServer(log)
 		}()
 
-		err := ide.DownloadIde(log)
-		if err != nil {
-			log.Error("Failed to download ide", zap.Error(err))
-			ide.TerminateIdePod(log)
-			return
+		var initializeIDE bool = true
+		if os.Getenv("RUNPOD_INITIALIZE_IDE") == "false" {
+			initializeIDE = false
+		}
+
+		if initializeIDE {
+			err := ide.DownloadIde(log)
+			if err != nil {
+				log.Error("Failed to download ide", zap.Error(err))
+				ide.TerminateIdePod(log)
+				return
+			}
 		}
 
 		ide.SYSTEM_INITIALIZED = true
