@@ -16,7 +16,7 @@ echo "Detected Linux: $PRETTY_NAME"
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
     apt-get update
-    apt-get install software-properties-common
+    apt-get install software-properties-common -y
     add-apt-repository ppa:redislabs/redis -y
     apt-get update
     PKG="curl redis"
