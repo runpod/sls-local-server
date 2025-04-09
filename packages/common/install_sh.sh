@@ -15,8 +15,9 @@ echo "Detected Linux: $PRETTY_NAME"
 # Determine the package manager and package based on the distribution.
 if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
     echo "Using apt-get for Debian/Ubuntu..."
+    add-apt-repository ppa:redislabs/redis -y
     apt-get update
-    PKG="curl redis-server"
+    PKG="curl redis"
     INSTALL_CMD="apt-get install -y"
 elif [ "$ID" = "fedora" ] || [ "$ID" = "centos" ] || [ "$ID" = "rhel" ]; then
     echo "Using dnf/yum for Fedora/CentOS/RHEL..."

@@ -15,8 +15,9 @@ echo "Detected Linux: $PRETTY_NAME"
 # Determine the package manager and package based on the distribution.
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
+    add-apt-repository ppa:redislabs/redis -y
     apt-get update
-    PKG="curl redis-server"
+    PKG="curl redis"
     INSTALL_CMD="apt-get install -y"
 elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" ]]; then
     echo "Using dnf/yum for Fedora/CentOS/RHEL..."
@@ -26,14 +27,14 @@ elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" ]]; then
     else
         INSTALL_CMD="yum install -y"
     fi
-    PKG="wget redis-server"
+    PKG="wget redis"
 elif [[ "$ID" == "arch" ]]; then
     echo "Using pacman for Arch Linux..."
-    PKG="curl redis-server"
+    PKG="curl redis"
     INSTALL_CMD="pacman -S --noconfirm"
 elif [[ "$ID" == "opensuse" ]]; then
     echo "Using zypper for openSUSE..."
-    PKG="wget redis-server"
+    PKG="wget redis"
     INSTALL_CMD="zypper install -y"
 else
     echo "Unsupported or unrecognized distribution: $ID"
