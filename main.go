@@ -344,76 +344,22 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 }
 
 func sendLogsToTinyBird(logBuffer chan string) {
-	// Start goroutine to collect and send logs
 	buffer := make([]map[string]interface{}, 0)
 	tinybirdToken := os.Getenv("TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
+	testId := os.Getenv("RUNPOD_TEST_ID")
 
-	for logMsg := range logBuffer {
-		level := "info"
-		logMessageList := strings.Split(logMsg, "\n")
+	const flushThreshold = 16
+	const flushInterval = 5 * time.Second
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
 
-		for _, logMessage := range logMessageList {
-			fmt.Println("logMsg: ### ", logMessage)
-			// Create log entry
-			if strings.HasPrefix(logMessage, "#ERROR:") {
-				level = "error"
-				logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
-			}
-			logEntry := map[string]interface{}{
-				"testId":     os.Getenv("RUNPOD_TEST_ID"),
-				"level":      level,
-				"podId":      runpodPodId,
-				"testNumber": testNumber,
-				"message":    logMessage,
-				"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
-			}
-
-			buffer = append(buffer, logEntry)
+	flush := func() {
+		if len(buffer) == 0 {
+			return
 		}
 
-		// Send logs when buffer is full or channel is closed
-		if len(buffer) >= 16 {
-			url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
-
-			var records []string
-			for _, entry := range buffer {
-				jsonBytes, err := json.Marshal(entry)
-				if err == nil {
-					records = append(records, string(jsonBytes))
-				}
-			}
-			payload := strings.Join(records, "\n")
-
-			go func(payload string) {
-				// Create and send request
-				req, err := http.NewRequest("POST", url, strings.NewReader(payload))
-				if err == nil {
-					req.Header.Set("Authorization", "Bearer "+tinybirdToken)
-					req.Header.Set("Content-Type", "text/plain")
-
-					client := &http.Client{Timeout: 2 * time.Second}
-					resp, err := client.Do(req)
-					if err != nil {
-						log.Error("Failed to send logs to tinybird", zap.Error(err))
-					} else if resp.StatusCode > 200 {
-						body, _ := io.ReadAll(resp.Body)
-						log.Error("Tinybird request failed",
-							zap.Int("status", resp.StatusCode),
-							zap.String("response", string(body)))
-						resp.Body.Close()
-					}
-				}
-
-				buffer = make([]map[string]interface{}, 0)
-			}(payload)
-		}
-	}
-
-	// Send any remaining logs in buffer
-	if len(buffer) > 0 {
 		url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
-
 		var records []string
 		for _, entry := range buffer {
 			jsonBytes, err := json.Marshal(entry)
@@ -424,21 +370,65 @@ func sendLogsToTinyBird(logBuffer chan string) {
 		payload := strings.Join(records, "\n")
 
 		req, err := http.NewRequest("POST", url, strings.NewReader(payload))
-		if err == nil {
-			req.Header.Set("Authorization", "Bearer "+tinybirdToken)
-			req.Header.Set("Content-Type", "text/plain")
+		if err != nil {
+			log.Error("Failed to create Tinybird request", zap.Error(err))
+			return
+		}
+		req.Header.Set("Authorization", "Bearer "+tinybirdToken)
+		req.Header.Set("Content-Type", "text/plain")
 
-			client := &http.Client{Timeout: 2 * time.Second}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Error("Failed to send final logs to tinybird", zap.Error(err))
-			} else if resp.StatusCode > 200 {
-				body, _ := io.ReadAll(resp.Body)
-				log.Error("Final tinybird request failed",
-					zap.Int("status", resp.StatusCode),
-					zap.String("response", string(body)))
-				resp.Body.Close()
+		client := &http.Client{Timeout: 2 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Error("Failed to send logs to Tinybird", zap.Error(err))
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			log.Error("Tinybird rejected logs",
+				zap.Int("status", resp.StatusCode),
+				zap.String("response", string(body)))
+		} else {
+			log.Info("Flushed logs to Tinybird", zap.Int("count", len(buffer)))
+		}
+
+		buffer = make([]map[string]interface{}, 0)
+	}
+
+	for {
+		select {
+		case logMsg, ok := <-logBuffer:
+			if !ok {
+				flush()
+				return
 			}
+
+			level := "info"
+			logMessageList := strings.Split(logMsg, "\n")
+			for _, logMessage := range logMessageList {
+				if strings.HasPrefix(logMessage, "#ERROR:") {
+					level = "error"
+					logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
+				}
+				entry := map[string]interface{}{
+					"testId":     testId,
+					"level":      level,
+					"podId":      runpodPodId,
+					"testNumber": testNumber,
+					"message":    logMessage,
+					"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+				}
+				buffer = append(buffer, entry)
+			}
+
+			if len(buffer) >= flushThreshold {
+				flush()
+			}
+
+		case <-ticker.C:
+			flush()
 		}
 	}
 }
