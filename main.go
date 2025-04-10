@@ -349,12 +349,6 @@ func sendLogsToTinyBird(logBuffer chan string) {
 	tinybirdToken := os.Getenv("TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 
-	go func() {
-		for num := range testNumberChannel {
-			testNumber = num
-		}
-	}()
-
 	for logMsg := range logBuffer {
 		level := "info"
 		logMessageList := strings.Split(logMsg, "\n")
