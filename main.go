@@ -26,6 +26,7 @@ var testNumberChannel = make(chan int)
 var SYSTEM_INITIALIZED = false
 var slash = "/"
 var folder = &slash
+var testNumber = 7081
 
 type Test struct {
 	ID    *int        `json:"id,omitempty"`
@@ -348,8 +349,6 @@ func sendLogsToTinyBird(logBuffer chan string) {
 	tinybirdToken := os.Getenv("TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 
-	testNumber := 7081
-
 	go func() {
 		for num := range testNumberChannel {
 			testNumber = num
@@ -651,6 +650,12 @@ func terminateIdePod() {
 }
 
 func main() {
+	go func() {
+		for num := range testNumberChannel {
+			testNumber = num
+		}
+	}()
+
 	command := flag.String("command", "python3 handler.py", "the user command to run")
 	check := flag.String("check", "null", "the version of the server to run")
 	aiApiIde := flag.String("ai-api-ide", "null", "should the binary server an ide")
