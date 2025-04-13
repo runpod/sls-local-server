@@ -345,7 +345,7 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 
 func sendLogsToTinyBird(logBuffer chan string, done chan struct{}) {
 	buffer := make([]map[string]interface{}, 0)
-	tinybirdToken := os.Getenv("TINYBIRD_TOKEN")
+	tinybirdToken := os.Getenv("RUNPOD_TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 	testId := os.Getenv("RUNPOD_TEST_ID")
 
