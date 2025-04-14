@@ -3,17 +3,76 @@ package ide
 import (
 	_ "embed"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
+	"sls-local-server/packages/common"
+	"sls-local-server/packages/testbeds"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-//go:embed install_bash.sh
-var bashInstallScript string
+var slash = "/"
+var folder = &slash
+var SYSTEM_INITIALIZED = false
 
-//go:embed install_sh.sh
-var shInstallScript string
+type Handler struct {
+	log *zap.Logger
+}
+
+func NewHandler(log *zap.Logger) *Handler {
+	return &Handler{
+		log: log,
+	}
+}
+
+func RunHealthServer(log *zap.Logger) {
+	gin.SetMode(gin.ReleaseMode)
+	h := NewHandler(log)
+
+	r := gin.New()
+	// Add recovery middleware
+	r.Use(gin.Recovery())
+	// Add logging middleware
+	r.Use(testbeds.LoggerMiddleware(log))
+
+	r.GET("/health", h.Health)
+
+	if err := r.Run(":" + "8079"); err != nil {
+		log.Fatal("Failed to start server", zap.Error(err))
+	}
+}
+
+func (h *Handler) Health(c *gin.Context) {
+	if !SYSTEM_INITIALIZED {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "unhealthy",
+		})
+	}
+
+	// Check the heartbeat file for code-server
+	heartbeatFile := "/root/.local/share/code-server/heartbeat"
+	fileInfo, err := os.Stat(heartbeatFile)
+
+	var heartbeat time.Time
+	if err == nil {
+		// Store the last modified time if file exists
+		heartbeat = fileInfo.ModTime()
+		h.log.Info("Code-server heartbeat found", zap.Time("lastModified", heartbeat))
+	} else {
+		// If file doesn't exist or can't be accessed
+		h.log.Warn("Could not access code-server heartbeat file", zap.Error(err))
+		heartbeat = time.Time{} // Zero time
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "healthy",
+		"folder":    *folder,
+		"heartbeat": heartbeat,
+	})
+}
 
 func RunCommand(command string, log *zap.Logger) error {
 	// Create a buffered channel for logs
@@ -98,73 +157,24 @@ func RunCommand(command string, log *zap.Logger) error {
 	return fmt.Errorf("Command closed")
 }
 
-func InstallAndRunAiApi(logger *zap.Logger) error {
-	isDev := os.Getenv("RUNPOD_API_URL") == "https://api.runpod.dev/graphql"
-	aiApiS3URL := "https://local-sls-server-runpodinc.s3.us-east-1.amazonaws.com/aiapi"
-	if isDev {
-		aiApiS3URL = "https://rutvik-test-script.s3.us-east-1.amazonaws.com/aiapi-test"
-	}
-
-	curlCmd := exec.Command("which", "curl")
-	if err := curlCmd.Run(); err == nil {
-		aiApiInstallCmd := exec.Command("curl", "-fsSL", aiApiS3URL, "-o", "/aiapi")
-		if err := aiApiInstallCmd.Run(); err != nil {
-			logger.Error("Failed to download aiapi", zap.Error(err))
-			return err
-		}
-	} else {
-		aiApiInstallCmd := exec.Command("wget", "-O", "/aiapi", aiApiS3URL)
-		if err := aiApiInstallCmd.Run(); err != nil {
-			logger.Error("Failed to download aiapi", zap.Error(err))
-			return err
-		}
-	}
-
-	cmd := "chmod +x /aiapi && AI_API_REDIS_ADDR=127.0.0.1:6379 AGENT_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_ADDR=127.0.0.1:6379 AI_API_REDIS_PASS= HOST_ACCESS_TOKEN=test ENV=local /aiapi"
-	// err := exec.Command("sh", "-c", cmd).Run()
-	go RunCommand(cmd, logger)
-
-	return nil
-}
-
-func DownloadIde(logger *zap.Logger) error {
+func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 	// First install curl
 	url := "https://code-server.dev/install.sh"
 
-	// Check if bash is available
-	bashCmd := exec.Command("which", "bash")
-	shellType := "sh"
-	if err := bashCmd.Run(); err == nil {
-		shellType = "bash"
+	if err := common.InstallAndRunAiApi(logger); err != nil {
+		logger.Error("Failed to install aiapi plus install script", zap.Error(err))
+		return fmt.Errorf("failed to install aiapi: %v", err)
 	}
 
-	// Determine which script to use based on shell type
-	scriptContent := shInstallScript
-	if shellType == "bash" {
-		scriptContent = bashInstallScript
+	if !initializeIDE {
+		return nil
 	}
-
-	// Write the script to a file
-	err := os.WriteFile("install_bash.sh", []byte(scriptContent), 0755)
-	if err != nil {
-		logger.Error("Failed to write install script to file", zap.Error(err))
-		return fmt.Errorf("failed to write install script to file: %v", err)
-	}
-
-	// Execute the script
-	cmd := exec.Command("./install_bash.sh")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		logger.Error("Error executing install script", zap.Error(err))
-		return fmt.Errorf("failed to execute install script: %v", err)
-	}
-	logger.Info("Script output", zap.String("output", string(output)))
 
 	// Check if curl is available
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
 		// Use curl to download
-		cmd := exec.Command("curl", "-fsSL", url, "-o", "install.sh")
+		cmd := exec.Command("curl", "-fsSL", url, "-o", "/bin/install.sh")
 		if err := cmd.Run(); err != nil {
 			logger.Error("Failed to download script using curl", zap.Error(err))
 			return fmt.Errorf("failed to download script with curl: %v", err)
@@ -173,7 +183,7 @@ func DownloadIde(logger *zap.Logger) error {
 		// Try wget if curl not available
 		wgetCmd := exec.Command("which", "wget")
 		if err := wgetCmd.Run(); err == nil {
-			cmd := exec.Command("wget", "-O", "install.sh", url)
+			cmd := exec.Command("wget", "-O", "/bin/install.sh", url)
 			if err := cmd.Run(); err != nil {
 				logger.Error("Failed to download script using wget", zap.Error(err))
 				return fmt.Errorf("failed to download script with wget: %v", err)
@@ -184,19 +194,8 @@ func DownloadIde(logger *zap.Logger) error {
 		}
 	}
 
-	InstallAndRunAiApi(logger)
-
-	// Start Redis server in daemonized mode
-	redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
-	redisOutput, err := redisCmd.CombinedOutput()
-	if err != nil {
-		logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
-		return fmt.Errorf("failed to start Redis server: %v", err)
-	}
-	logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
-
 	// Then install code-server
-	cmd = exec.Command("sh", "-c", "chmod +x install.sh && ./install.sh")
+	cmd := exec.Command("sh", "-c", "chmod +x /bin/install.sh && /bin/install.sh")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to create stdout pipe", zap.Error(err))
@@ -247,4 +246,37 @@ func DownloadIde(logger *zap.Logger) error {
 	}
 
 	return nil
+}
+
+func TerminateIdePod(log *zap.Logger) {
+	runpodPodIDEJwt := os.Getenv("RUNPOD_IDE_POD_JWT")
+	webhookUrl := os.Getenv("RUNPOD_IDE_POD_WEBHOOK_URL")
+
+	if runpodPodIDEJwt == "" || webhookUrl == "" {
+		log.Error("RUNPOD_IDE_POD_JWT or RUNPOD_IDE_POD_WEBHOOK_URL not set")
+		return
+	}
+
+	req, err := http.NewRequest("POST", webhookUrl, nil)
+	if err != nil {
+		log.Error("Failed to create request", zap.Error(err))
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+runpodPodIDEJwt)
+
+	// send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error("Failed to send request", zap.Error(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Error("Request failed", zap.Int("status", resp.StatusCode))
+		return
+	}
 }
