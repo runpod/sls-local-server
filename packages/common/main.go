@@ -25,7 +25,6 @@ var (
 )
 
 func init() {
-	// Initialize logger
 	var err error
 	if os.Getenv("ENV") == "local" {
 		log = prettyconsole.NewLogger(zap.DebugLevel)
@@ -44,14 +43,13 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 	jwtToken := os.Getenv("RUNPOD_JWT_TOKEN")
 	runpodTestId := os.Getenv("RUNPOD_TEST_ID")
-
 	webhookUrl := os.Getenv("RUNPOD_TEST_WEBHOOK_URL")
+
 	if webhookUrl == "" {
 		log.Error("RUNPOD_TEST_WEBHOOK_URL not set")
 		return
 	}
 
-	// Convert results to JSON
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"podId":   runpodPodId,
 		"testId":  runpodTestId,
@@ -64,7 +62,6 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 		return
 	}
 
-	// Create request
 	req, err := http.NewRequest("POST", webhookUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Error("Failed to create request", zap.Error(err))
@@ -74,7 +71,6 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+jwtToken)
 
-	// send request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -88,32 +84,30 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 		return
 	}
 
-	time.Sleep(time.Duration(30) * time.Second)
-
+	time.Sleep(30 * time.Second)
 	log.Info("Results sent to GraphQL", zap.Any("results", results))
 }
 
 func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Logger) {
-	// Start goroutine to collect and send logs
 	buffer := make([]map[string]interface{}, 0)
 	tinybirdToken := os.Getenv("RUNPOD_TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 
-	testNumber := 7081
-
-	go func() {
-		for num := range testNumChan {
-			testNumber = num
-		}
-	}()
+	var testNumber = 0
 
 	for logMsg := range logBuffer {
 		level := "info"
 		logMessageList := strings.Split(logMsg, "\n")
 
+		// Try to read a new testNumber without blocking
+		select {
+		case latest := <-testNumChan:
+			testNumber = latest
+		default:
+		}
+
 		for _, logMessage := range logMessageList {
 			fmt.Println("logMsg: ### ", logMessage)
-			// Create log entry
 			if strings.HasPrefix(logMessage, "#ERROR:") {
 				level = "error"
 				logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
@@ -130,70 +124,48 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 			buffer = append(buffer, logEntry)
 		}
 
-		// Send logs when buffer is full or channel is closed
 		if len(buffer) >= 16 {
-			url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
-
-			var records []string
-			for _, entry := range buffer {
-				jsonBytes, err := json.Marshal(entry)
-				if err == nil {
-					records = append(records, string(jsonBytes))
-				}
-			}
-			payload := strings.Join(records, "\n")
-			fmt.Println("payload: ### ", payload)
-
-			go func(payload string) {
-				// Defer recovery from any panics that might occur during the HTTP request
-				defer func() {
-					if r := recover(); r != nil {
-						log.Error("Recovered from panic in log sending goroutine",
-							zap.Any("panic", r),
-							zap.String("stack", string(debug.Stack())))
-					}
-				}()
-				// Create and send request
-				req, err := http.NewRequest("POST", url, strings.NewReader(payload))
-				if err == nil {
-					req.Header.Set("Authorization", "Bearer "+tinybirdToken)
-					req.Header.Set("Content-Type", "text/plain")
-
-					client := &http.Client{Timeout: 2 * time.Second}
-					_, err := client.Do(req)
-					if err != nil {
-						log.Error("Failed to send logs to tinybird", zap.Error(err))
-					}
-				}
-
-				buffer = make([]map[string]interface{}, 0)
-			}(payload)
+			sendLogs(buffer, tinybirdToken, log)
+			buffer = make([]map[string]interface{}, 0)
 		}
 	}
 
-	// Send any remaining logs in buffer
 	if len(buffer) > 0 {
-		url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
+		sendLogs(buffer, tinybirdToken, log)
+	}
+}
 
-		var records []string
-		for _, entry := range buffer {
-			jsonBytes, err := json.Marshal(entry)
-			if err == nil {
-				records = append(records, string(jsonBytes))
-			}
-		}
-		payload := strings.Join(records, "\n")
+func sendLogs(buffer []map[string]interface{}, token string, log *zap.Logger) {
+	url := "https://api.us-east.tinybird.co/v0/events?wait=true&name=sls_test_logs_v1"
 
-		req, err := http.NewRequest("POST", url, strings.NewReader(payload))
+	var records []string
+	for _, entry := range buffer {
+		jsonBytes, err := json.Marshal(entry)
 		if err == nil {
-			req.Header.Set("Authorization", "Bearer "+tinybirdToken)
-			req.Header.Set("Content-Type", "text/plain")
-
-			client := &http.Client{Timeout: 2 * time.Second}
-			_, err := client.Do(req)
-			if err != nil {
-				log.Error("Failed to send final logs to tinybird", zap.Error(err))
-			}
+			records = append(records, string(jsonBytes))
 		}
+	}
+	payload := strings.Join(records, "\n")
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("Recovered from panic in log sending",
+				zap.Any("panic", r),
+				zap.String("stack", string(debug.Stack())))
+		}
+	}()
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(payload))
+	if err != nil {
+		log.Error("Failed to create request", zap.Error(err))
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "text/plain")
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	_, err = client.Do(req)
+	if err != nil {
+		log.Error("Failed to send logs to tinybird", zap.Error(err))
 	}
 }
