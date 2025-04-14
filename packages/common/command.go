@@ -135,7 +135,7 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	log.Info("Running command", zap.String("command", command))
 	// Split the command string into command and arguments
 	cmd := exec.Command(command)
-	cmd.Env = append(os.Environ(), "RUNPOD_LOG_LEVEL=INFO")
+	cmd.Env = []string{"RUNPOD_LOG_LEVEL=INFO"}
 	if ide {
 		cmd.Env = append(cmd.Env, "PASSWORD=runpod")
 		cmd.Env = append(cmd.Env, "AI_API_REDIS_ADDR=127.0.0.1:6379")
