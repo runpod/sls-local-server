@@ -36,29 +36,37 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 			}
 		}
 
-		bashCmd := exec.Command("which", "bash")
-		shellType := "sh"
-		if err := bashCmd.Run(); err == nil {
-			shellType = "bash"
+		// bashCmd := exec.Command("which", "bash")
+		// shellType := "sh"
+		// if err := bashCmd.Run(); err == nil {
+		// 	shellType = "bash"
+		// }
+		// if shellType == "sh" {
+		// 	redisCmd := exec.Command("redis-server", "--daemonize", "yes")
+		// 	redisOutput, err := redisCmd.CombinedOutput()
+		// 	if err != nil {
+		// 		logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
+		// 		return
+		// 	}
+		// 	logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
+		// } else {
+		// 	// Start Redis server in daemonized mode
+		// 	redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
+		// 	redisOutput, err := redisCmd.CombinedOutput()
+		// 	if err != nil {
+		// 		logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
+		// 		return
+		// 	}
+		// 	logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
+		// }
+
+		redisCmd := exec.Command("redis-server", "--daemonize", "yes")
+		redisOutput, err := redisCmd.CombinedOutput()
+		if err != nil {
+			logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
+			return
 		}
-		if shellType == "sh" {
-			redisCmd := exec.Command("redis-server", "--daemonize", "yes")
-			redisOutput, err := redisCmd.CombinedOutput()
-			if err != nil {
-				logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
-				return
-			}
-			logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
-		} else {
-			// Start Redis server in daemonized mode
-			redisCmd := exec.Command("sh", "-c", "redis-server --daemonize yes")
-			redisOutput, err := redisCmd.CombinedOutput()
-			if err != nil {
-				logger.Error("Failed to start Redis server", zap.Error(err), zap.String("output", string(redisOutput)))
-				return
-			}
-			logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
-		}
+		logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
 
 		RunCommand("chmod +x /bin/aiapi && /bin/aiapi", false, logger)
 	}()
