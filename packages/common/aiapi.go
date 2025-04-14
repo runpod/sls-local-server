@@ -68,7 +68,28 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 		}
 		logger.Info("Redis server started in daemonized mode", zap.String("output", string(redisOutput)))
 
-		RunCommand("chmod +x /bin/aiapi && /bin/aiapi", false, logger)
+		filePath := "/bin/aiapi" // Replace with your file path
+
+		// Retrieve the file information to get its current permissions.
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			fmt.Printf("Error retrieving file info: %v\n", err)
+			return
+		}
+
+		// Retrieve the current mode and add the executable bits (owner, group, others)
+		newMode := fileInfo.Mode() | 0111
+
+		// Apply the new permissions to the file.
+		err = os.Chmod(filePath, newMode)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Error changing file permissions: %v\n", err))
+			return
+		}
+
+		logger.Info("File permissions updated, the file is now executable.")
+
+		RunAiApiCommand("/bin/aiapi", false, logger)
 	}()
 
 	return nil
