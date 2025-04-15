@@ -195,7 +195,7 @@ func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 	}
 
 	// Then install code-server
-	cmd := exec.Command("sh", "-c", "tar -xzf /bin/openvscode-server.tar.gz -C /bin/openvscode-server")
+	cmd := exec.Command("sh", "-c", "tar -xzf /bin/openvscode-server.tar.gz -C /bin")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to create stdout pipe", zap.Error(err))
