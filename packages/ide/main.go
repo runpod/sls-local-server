@@ -174,7 +174,7 @@ func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
 		// Use curl to download
-		cmd := exec.Command("curl", "-L", "-o", "/bin/openvscode-server.tar.gz", url)
+		cmd := exec.Command("-", "-L", "-o", "/bin/openvscode-server.tar.gz", url)
 		if err := cmd.Run(); err != nil {
 			logger.Error("Failed to download script using curl", zap.Error(err))
 			return fmt.Errorf("failed to download script with curl: %v", err)
@@ -194,10 +194,8 @@ func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 		}
 	}
 
-	
-
 	// Then install code-server
-	cmd := exec.Command("sh", "-c", "tar -xzf /bin/openvscode-server.tar.gz -C /bin")
+	cmd := exec.Command("tar", "-xzf", "/bin/openvscode-server.tar.gz", "-C", "/bin")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to create stdout pipe", zap.Error(err))

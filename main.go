@@ -65,7 +65,7 @@ func main() {
 
 		if initializeIDE {
 			ide.SYSTEM_INITIALIZED = true
-			cmd := "cd /bin/openvscode-server && ./bin/openvscode-server --connection-token 1234 --host 0.0.0.0 --port 8079"
+			cmd := "cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token 1234 --host 0.0.0.0 --port 8079"
 			err = common.RunCommand(cmd, true, log)
 			if err != nil {
 				log.Error("Failed to run command", zap.Error(err))
