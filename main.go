@@ -65,7 +65,7 @@ func main() {
 
 		if initializeIDE {
 			ide.SYSTEM_INITIALIZED = true
-			cmd := fmt.Sprintf("code-server --bind-addr 0.0.0.0:8080 --auth password --welcome-text \"RunpodIDE\" --app-name \"RunpodIDE\" %s", *folder)
+			cmd := "cd /bin/openvscode-server && ./bin/openvscode-server --connection-token 1234 --host 0.0.0.0"
 			err = common.RunCommand(cmd, true, log)
 			if err != nil {
 				log.Error("Failed to run command", zap.Error(err))
