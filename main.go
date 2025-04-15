@@ -120,7 +120,6 @@ func main() {
 			modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
 		}
 		fmt.Println("Running command", modifiedCommand)
-		testNumberChannel <- -1
 		common.RunCommand(modifiedCommand, false, log, testNumberChannel)
 	}
 }
