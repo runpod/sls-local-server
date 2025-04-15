@@ -65,13 +65,14 @@ func main() {
 
 		if initializeIDE {
 			ide.SYSTEM_INITIALIZED = true
-			cmd := "cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token 1234 --host 0.0.0.0 --port 8080"
+			cmd := "cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token 1234 --host 0.0.0.0 --port 8080 --enable-remote-auto-shutdown --install-extension RunPod.runpod-build"
 			err = common.RunCommand(cmd, true, log)
 			if err != nil {
 				log.Error("Failed to run command", zap.Error(err))
 				ide.TerminateIdePod(log)
 				return
 			}
+			ide.TerminateIdePod(log)
 		} else {
 			// Create a blocking channel to prevent the program from exiting
 			log.Info("IDE initialization skipped, creating blocking channel")
