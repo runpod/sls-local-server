@@ -174,7 +174,7 @@ func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 	curlCmd := exec.Command("which", "curl")
 	if err := curlCmd.Run(); err == nil {
 		// Use curl to download
-		cmd := exec.Command("-", "-L", "-o", "/bin/openvscode-server.tar.gz", url)
+		cmd := exec.Command("curl", "-L", "-o", "/bin/openvscode-server.tar.gz", url)
 		if err := cmd.Run(); err != nil {
 			logger.Error("Failed to download script using curl", zap.Error(err))
 			return fmt.Errorf("failed to download script with curl: %v", err)
