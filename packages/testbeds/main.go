@@ -109,10 +109,10 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-func startTests(log *zap.Logger) {
+func startTests(log *zap.Logger, testNumberChan chan int) {
 	for i, test := range testConfig {
 		log.Info("Sending request to IDE runsync endpoint", zap.String("test_name", test.Name))
-
+		testNumberChan <- i
 		// Create HTTP client
 		client := &http.Client{
 			Timeout: time.Second * time.Duration(*test.Timeout),
@@ -203,7 +203,7 @@ func startTests(log *zap.Logger) {
 	common.SendResultsToGraphQL("SUCCESS", nil, log, results)
 }
 
-func RunTests(log *zap.Logger) {
+func RunTests(log *zap.Logger, testNumberChannel chan int) {
 	log.Info("Starting server")
 	parseTestConfig(log)
 	log.Info("Parsed test config")
@@ -224,5 +224,5 @@ func RunTests(log *zap.Logger) {
 
 	time.Sleep(time.Duration(1) * time.Second)
 	log.Info("Installed and ran AI API")
-	startTests(log)
+	startTests(log, testNumberChannel)
 }

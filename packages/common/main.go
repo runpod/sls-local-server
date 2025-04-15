@@ -17,7 +17,6 @@ import (
 
 var Mutex = &sync.Mutex{}
 var GqlMutex = &sync.Mutex{}
-var TestNumberChannel = make(chan int)
 
 var (
 	log        *zap.Logger
@@ -93,17 +92,19 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 	tinybirdToken := os.Getenv("RUNPOD_TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 
-	var testNumber = 0
+	var testNumber = -1
 
 	for logMsg := range logBuffer {
 		level := "info"
 		logMessageList := strings.Split(logMsg, "\n")
 
 		// Try to read a new testNumber without blocking
-		select {
-		case latest := <-testNumChan:
-			testNumber = latest
-		default:
+		if testNumChan != nil {
+			select {
+			case latest := <-testNumChan:
+				testNumber = latest
+			default:
+			}
 		}
 
 		for _, logMessage := range logMessageList {

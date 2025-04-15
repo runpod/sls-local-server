@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func RunCommand(command string, ide bool, log *zap.Logger) error {
+func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel chan int) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 16)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
@@ -60,7 +60,6 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 		return err
 	}
 
-	testNumberChannel := make(chan int)
 	go SendLogsToTinyBird(logBuffer, testNumberChannel, log)
 
 	// Start goroutines to continuously read from pipes
