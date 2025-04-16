@@ -112,7 +112,7 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 func startTests(log *zap.Logger, testNumberChan chan int) {
 	for i, test := range testConfig {
 		log.Info("Sending request to IDE runsync endpoint", zap.String("test_name", test.Name))
-		testNumberChan <- i
+		testNumberChan <- i + 1
 		// Create HTTP client
 		client := &http.Client{
 			Timeout: time.Second * time.Duration(*test.Timeout),
