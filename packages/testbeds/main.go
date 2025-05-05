@@ -42,6 +42,12 @@ func parseTestConfig(log *zap.Logger) {
 
 		// Parse JSON into testConfig
 		if err := json.Unmarshal([]byte(tests), &testConfig); err != nil {
+			results = append(results, common.Result{
+				ID:     -1,
+				Status: "FAILED",
+				Error:  fmt.Sprintf("Could not parse the tests properly. %s", err.Error()),
+			})
+			common.SendResultsToGraphQL("SUCCESS", nil, log, results)
 			log.Fatal("Failed to parse runpod tests",
 				zap.Error(err))
 		}
