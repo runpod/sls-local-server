@@ -100,11 +100,16 @@ func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Lo
 
 		// Try to read a new testNumber without blocking
 		if testNumChan != nil {
-			select {
-			case latest := <-testNumChan:
-				testNumber = latest
-			default:
-			}
+			go func() {
+				for {
+					select {
+					case latest := <-testNumChan:
+						testNumber = latest
+					default:
+						continue
+					}
+				}
+			}() 
 		}
 
 		for _, logMessage := range logMessageList {
