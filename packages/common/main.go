@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"sls-local-server/packages/vars"
 	"strings"
 	"sync"
 	"time"
@@ -87,57 +88,56 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 	log.Info("Results sent to GraphQL", zap.Any("results", results))
 }
 
-func SendLogsToTinyBird(logBuffer chan string, testNumChan chan int, log *zap.Logger) {
+func SendLogsToTinyBird(logBuffer chan string, log *zap.Logger) {
 	buffer := make([]map[string]interface{}, 0)
 	tinybirdToken := os.Getenv("RUNPOD_TINYBIRD_TOKEN")
 	runpodPodId := os.Getenv("RUNPOD_POD_ID")
 
-	var testNumber = -1
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
 
-	for logMsg := range logBuffer {
-		level := "info"
-		logMessageList := strings.Split(logMsg, "\n")
+	var testNumber = vars.CURRENT_TEST_ID
 
-		// Try to read a new testNumber without blocking
-		if testNumChan != nil {
-			go func() {
-				for {
-					select {
-					case latest := <-testNumChan:
-						testNumber = latest
-					default:
-						continue
-					}
+	for {
+		select {
+		case logMsg, ok := <-logBuffer:
+			if !ok {
+				log.Error("log buffer closed")
+				continue
+			}
+
+			testNumber = vars.CURRENT_TEST_ID
+			level := "info"
+			logMessageList := strings.Split(logMsg, "\n")
+
+			for _, logMessage := range logMessageList {
+				fmt.Println("logMsg: ### ", logMessage)
+				if strings.HasPrefix(logMessage, "#ERROR:") {
+					level = "error"
+					logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
 				}
-			}() 
-		}
+				logEntry := map[string]interface{}{
+					"testId":     os.Getenv("RUNPOD_TEST_ID"),
+					"level":      level,
+					"podId":      runpodPodId,
+					"testNumber": testNumber,
+					"message":    logMessage,
+					"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+				}
 
-		for _, logMessage := range logMessageList {
-			fmt.Println("logMsg: ### ", logMessage)
-			if strings.HasPrefix(logMessage, "#ERROR:") {
-				level = "error"
-				logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
-			}
-			logEntry := map[string]interface{}{
-				"testId":     os.Getenv("RUNPOD_TEST_ID"),
-				"level":      level,
-				"podId":      runpodPodId,
-				"testNumber": testNumber,
-				"message":    logMessage,
-				"timestamp":  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+				buffer = append(buffer, logEntry)
 			}
 
-			buffer = append(buffer, logEntry)
+			if len(buffer) >= 16 {
+				sendLogs(buffer, tinybirdToken, log)
+				buffer = make([]map[string]interface{}, 0)
+			}
+		case <-ticker.C:
+			if len(buffer) >= 0 {
+				sendLogs(buffer, tinybirdToken, log)
+				buffer = make([]map[string]interface{}, 0)
+			}
 		}
-
-		if len(buffer) >= 16 {
-			sendLogs(buffer, tinybirdToken, log)
-			buffer = make([]map[string]interface{}, 0)
-		}
-	}
-
-	if len(buffer) > 0 {
-		sendLogs(buffer, tinybirdToken, log)
 	}
 }
 

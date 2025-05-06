@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"sls-local-server/packages/common"
+	"sls-local-server/packages/vars"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -130,11 +131,11 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-func startTests(log *zap.Logger, testNumberChan chan int) {
+func startTests(log *zap.Logger) {
 	for j, test := range testConfig {
 		i := j + 1
+		vars.CURRENT_TEST_ID = i
 		log.Info("Sending request to IDE runsync endpoint", zap.String("test_name", test.Name))
-		testNumberChan <- i
 		// Create HTTP client
 		client := &http.Client{
 			Timeout: time.Second * time.Duration(*test.Timeout),
@@ -225,7 +226,7 @@ func startTests(log *zap.Logger, testNumberChan chan int) {
 	common.SendResultsToGraphQL("SUCCESS", nil, log, results)
 }
 
-func RunTests(log *zap.Logger, testNumberChannel chan int) {
+func RunTests(log *zap.Logger) {
 	log.Info("Starting server")
 	parseTestConfig(log)
 	log.Info("Parsed test config")
@@ -246,5 +247,5 @@ func RunTests(log *zap.Logger, testNumberChannel chan int) {
 
 	time.Sleep(time.Duration(1) * time.Second)
 	log.Info("Installed and ran AI API")
-	startTests(log, testNumberChannel)
+	startTests(log)
 }

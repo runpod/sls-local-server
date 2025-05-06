@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel chan int) error {
+func RunCommand(command string, ide bool, log *zap.Logger) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 16)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
@@ -67,7 +67,7 @@ func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel cha
 		return err
 	}
 
-	go SendLogsToTinyBird(logBuffer, testNumberChannel, log)
+	go SendLogsToTinyBird(logBuffer, log)
 
 	// Start goroutines to continuously read from pipes
 	go func() {
@@ -135,7 +135,7 @@ func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel cha
 	time.Sleep(time.Duration(10) * time.Second)
 	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
-	SendResultsToGraphQL("FAILED", &errorMsg, log, 
+	SendResultsToGraphQL("FAILED", &errorMsg, log,
 		[]Result{
 			{
 				ID:     0,
@@ -200,8 +200,7 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 		return err
 	}
 
-	testNumberChannel := make(chan int)
-	go SendLogsToTinyBird(logBuffer, testNumberChannel, log)
+	go SendLogsToTinyBird(logBuffer, log)
 
 	// Start goroutines to continuously read from pipes
 	go func() {
