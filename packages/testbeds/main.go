@@ -2,6 +2,7 @@ package testbeds
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,11 +40,25 @@ type OutputData struct {
 func parseTestConfig(log *zap.Logger) {
 	if os.Getenv("RUNPOD_TEST") == "true" {
 		tests := os.Getenv("RUNPOD_TESTS")
+		decoded, err := base64.StdEncoding.DecodeString(tests)
+		if err != nil {
+			results = append(results, common.Result{
+				ID:     0,
+				Status: "FAILED",
+				Error:  fmt.Sprintf("Could not parse the tests properly. %s", err.Error()),
+			})
+			common.SendResultsToGraphQL("SUCCESS", nil, log, results)
+			log.Fatal("Failed to decode base64 string",
+				zap.Error(err))
+		}
+
+		// overwrite the same variable with the decoded string
+		tests = string(decoded)
 
 		// Parse JSON into testConfig
 		if err := json.Unmarshal([]byte(tests), &testConfig); err != nil {
 			results = append(results, common.Result{
-				ID:     -1,
+				ID:     0,
 				Status: "FAILED",
 				Error:  fmt.Sprintf("Could not parse the tests properly. %s", err.Error()),
 			})

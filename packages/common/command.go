@@ -54,7 +54,14 @@ func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel cha
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
 		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
-		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
+		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{
+			{
+				ID:     0,
+				Name:   "initialization",
+				Error:  err.Error(),
+				Status: "ERROR",
+			},
+		})
 		fmt.Println("Failed to start command: ", err.Error())
 		log.Error("Failed to start command", zap.Error(err))
 		return err
@@ -114,14 +121,30 @@ func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel cha
 	if err := cmd.Wait(); err != nil {
 		errorMsg := fmt.Sprintf("Command closed: %s", err.Error())
 		fmt.Println("Command closed: ", errorMsg)
-		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
+		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{
+			{
+				ID:     0,
+				Name:   "initialization",
+				Error:  err.Error(),
+				Status: "ERROR",
+			},
+		})
 		return nil
 	}
 
 	time.Sleep(time.Duration(10) * time.Second)
 	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
-	SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
+	SendResultsToGraphQL("FAILED", &errorMsg, log, 
+		[]Result{
+			{
+				ID:     0,
+				Name:   "initialization",
+				Error:  err.Error(),
+				Status: "ERROR",
+			},
+		},
+	)
 
 	return nil
 }
