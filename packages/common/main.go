@@ -106,12 +106,19 @@ func SendLogsToTinyBird(logBuffer chan string, log *zap.Logger) {
 				continue
 			}
 
+			if logMsg == "" {
+				continue
+			}
+
 			testNumber = vars.CURRENT_TEST_ID
 			level := "info"
 			logMessageList := strings.Split(logMsg, "\n")
 
 			for _, logMessage := range logMessageList {
 				fmt.Println("logMsg: ### ", logMessage)
+				if logMessage == "" {
+					continue
+				}
 				if strings.HasPrefix(logMessage, "#ERROR:") {
 					level = "error"
 					logMessage = strings.TrimPrefix(logMessage, "#ERROR:")
@@ -133,7 +140,7 @@ func SendLogsToTinyBird(logBuffer chan string, log *zap.Logger) {
 				buffer = make([]map[string]interface{}, 0)
 			}
 		case <-ticker.C:
-			if len(buffer) >= 0 {
+			if len(buffer) > 0 {
 				sendLogs(buffer, tinybirdToken, log)
 				buffer = make([]map[string]interface{}, 0)
 			}
