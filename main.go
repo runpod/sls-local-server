@@ -116,6 +116,7 @@ func main() {
 		if command != nil {
 			modifiedCommand = *command
 			modifiedCommand = strings.Replace(modifiedCommand, "/bin/sh -c ", "", 1)
+			modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -c ", "", 1)
 			modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
 		}
 		fmt.Println("Running command", modifiedCommand)

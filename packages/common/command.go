@@ -140,7 +140,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 			{
 				ID:     0,
 				Name:   "initialization",
-				Error:  err.Error(),
+				Error:  errorMsg,
 				Status: "ERROR",
 			},
 		},
