@@ -69,13 +69,27 @@ func parseTestConfig(log *zap.Logger) {
 
 		log.Info("Parsed test config", zap.Any("testConfig", testConfig))
 		for i, test := range testConfig {
-			testWrapped := map[string]interface{}{"input": test}
 			testConfig[i] = test
-			testConfig[i].Input = testWrapped
 			testConfig[i].ID = &i
+
 			if test.Timeout == nil {
 				threeHundred := 30 * 1000
 				testConfig[i].Timeout = &threeHundred
+			}
+
+			if test.Name == "" {
+				testConfig[i].Name = fmt.Sprintf("Test %d", i+1)
+			}
+
+			if test.Input == nil {
+				results = append(results, common.Result{
+					ID:     i,
+					Status: "FAILED",
+					Error:  fmt.Sprintf("You did not send the tests in a proper format. %s", err.Error()),
+				})
+				log.Error("Failed to parse test input",
+					zap.String("test_name", test.Name),
+					zap.Error(err))
 			}
 		}
 	} else {
