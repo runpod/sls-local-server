@@ -66,7 +66,7 @@ func main() {
 		if initializeIDE {
 			ide.SYSTEM_INITIALIZED = true
 			cmd := fmt.Sprintf("cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token %s --host 0.0.0.0 --port 8080 --enable-remote-auto-shutdown", os.Getenv("IDE_CONNECTION_STRING"))
-			err = common.RunCommand(cmd, true, log, nil)
+			err = common.RunCommand(cmd, true, log)
 			if err != nil {
 				log.Error("Failed to run command", zap.Error(err))
 				ide.TerminateIdePod(log)
@@ -96,11 +96,10 @@ func main() {
 			log.Info("Exiting program")
 		}
 	} else {
-		testNumberChannel := make(chan int)
-		go func(testNumberChannel chan int) {
+		go func() {
 			fmt.Println("Running tests")
-			testbeds.RunTests(log, testNumberChannel)
-		}(testNumberChannel)
+			testbeds.RunTests(log)
+		}()
 
 		for {
 			time.Sleep(time.Duration(1) * time.Second)
@@ -117,9 +116,10 @@ func main() {
 		if command != nil {
 			modifiedCommand = *command
 			modifiedCommand = strings.Replace(modifiedCommand, "/bin/sh -c ", "", 1)
+			modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -c ", "", 1)
 			modifiedCommand = strings.Replace(modifiedCommand, "/bin/bash -o pipefail -c ", "", 1)
 		}
 		fmt.Println("Running command", modifiedCommand)
-		common.RunCommand(modifiedCommand, false, log, testNumberChannel)
+		common.RunCommand(modifiedCommand, false, log)
 	}
 }
