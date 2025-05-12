@@ -69,7 +69,6 @@ func parseTestConfig(log *zap.Logger) {
 
 		log.Info("Parsed test config", zap.Any("testConfig", testConfig))
 		for i, test := range testConfig {
-			testConfig[i] = test
 			testConfig[i].ID = &i
 
 			if test.Timeout == nil {
@@ -155,7 +154,10 @@ func startTests(log *zap.Logger, testNumberChan chan int) {
 		}
 
 		// Marshal back to JSON to ensure proper formatting
-		formattedInput, err := json.Marshal(test.Input)
+		formattedInput, err := json.Marshal(map[string]any{
+			"input": test.Input,
+		})
+
 		if err != nil {
 			results = append(results, common.Result{
 				ID:     i,

@@ -135,7 +135,7 @@ func RunCommand(command string, ide bool, log *zap.Logger, testNumberChannel cha
 	time.Sleep(time.Duration(10) * time.Second)
 	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
-	SendResultsToGraphQL("FAILED", &errorMsg, log, 
+	SendResultsToGraphQL("FAILED", &errorMsg, log,
 		[]Result{
 			{
 				ID:     0,
