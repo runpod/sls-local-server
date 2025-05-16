@@ -16,11 +16,17 @@ echo "Detected Linux: $PRETTY_NAME"
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
     apt-get update
-    apt-get install software-properties-common python3-launchpadlib -y
-    add-apt-repository ppa:redislabs/redis -y
-    apt-get update
-    PKG="curl redis"
-    INSTALL_CMD="apt-get install -y"
+    apt-get install build-essential tcl pkg-config libssl-dev -y && \
+    curl -O https://download.redis.io/redis-stable.tar.gz && \
+    tar xzf redis-stable.tar.gz && \
+    cd redis-stable && \
+    make BUILD_TLS=yes && \
+    make install
+    # apt-get install software-properties-common python3-launchpadlib -y
+    # add-apt-repository ppa:redislabs/redis -y
+    # apt-get update
+    # PKG="curl redis"
+    # INSTALL_CMD="apt-get install -y"
 elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" ]]; then
     echo "Using dnf/yum for Fedora/CentOS/RHEL..."
     # Prefer dnf if available, else fall back to yum.
