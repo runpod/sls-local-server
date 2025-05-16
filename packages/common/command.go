@@ -64,6 +64,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 		})
 		fmt.Println("Failed to start command: ", err.Error())
 		log.Error("Failed to start command", zap.Error(err))
+		time.Sleep(time.Duration(10) * time.Second)
 		return err
 	}
 
@@ -129,6 +130,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 				Status: "ERROR",
 			},
 		})
+		time.Sleep(time.Duration(10) * time.Second)
 		return nil
 	}
 
