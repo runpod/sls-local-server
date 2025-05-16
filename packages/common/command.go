@@ -206,7 +206,6 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
 		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
-		time.Sleep(time.Duration(10) * time.Second)
 		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
 		fmt.Println("Failed to start command: ", err.Error())
 		log.Error("Failed to start command", zap.Error(err))
@@ -272,12 +271,10 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	if err := cmd.Wait(); err != nil {
 		errorMsg := fmt.Sprintf("Command closed: %s", err.Error())
 		fmt.Println("Command closed: ", errorMsg)
-		time.Sleep(time.Duration(10) * time.Second)
 		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
 		return nil
 	}
 
-	time.Sleep(time.Duration(10) * time.Second)
 	errorMsg := "Command closed. Please view the logs for more information."
 	SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
 
