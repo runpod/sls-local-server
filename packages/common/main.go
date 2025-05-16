@@ -50,6 +50,8 @@ func SendResultsToGraphQL(status string, errorReason *string, log *zap.Logger, r
 		return
 	}
 
+	time.Sleep(time.Duration(40) * time.Second)
+
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"podId":   runpodPodId,
 		"testId":  runpodTestId,
