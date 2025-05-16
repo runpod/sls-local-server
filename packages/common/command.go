@@ -183,12 +183,14 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to create stdout pipe: %s", err.Error())
 		log.Error("Failed to create stdout pipe", zap.Error(err))
+		time.Sleep(time.Duration(10) * time.Second)
 		return err
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to create stderr pipe: %s", err.Error())
 		log.Error("Failed to create stderr pipe", zap.Error(err))
+		time.Sleep(time.Duration(10) * time.Second)
 		return err
 	}
 
@@ -196,6 +198,7 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	if err != nil {
 		logBuffer <- fmt.Sprintf("Failed to start command: %s", err.Error())
 		errorMsg := fmt.Sprintf("Failed to start command: %s", err.Error())
+		time.Sleep(time.Duration(10) * time.Second)
 		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
 		fmt.Println("Failed to start command: ", err.Error())
 		log.Error("Failed to start command", zap.Error(err))
@@ -256,6 +259,7 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	if err := cmd.Wait(); err != nil {
 		errorMsg := fmt.Sprintf("Command closed: %s", err.Error())
 		fmt.Println("Command closed: ", errorMsg)
+		time.Sleep(time.Duration(10) * time.Second)
 		SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
 		return nil
 	}
