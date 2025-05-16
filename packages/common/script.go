@@ -37,11 +37,13 @@ func installScript(logger *zap.Logger) error {
 	}
 
 	// Execute the script
-	err = RunCommand("/bin/install_bash.sh", false, logger)
+	cmd := exec.Command("/bin/install_bash.sh")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Error("Error executing install script", zap.Error(err))
 		return fmt.Errorf("failed to execute install script: %v", err)
 	}
+	logger.Info("Script output", zap.String("output", string(output)))
 
 	return nil
 }

@@ -2,6 +2,8 @@
 # This script detects the Linux distribution and installs either curl or wget
 # using the appropriate package manager.
 
+set -euo pipefail
+
 # Ensure /etc/os-release exists for detecting the distro.
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -15,6 +17,7 @@ echo "Detected Linux: $PRETTY_NAME"
 # Determine the package manager and package based on the distribution.
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
+    export DEBIAN_FRONTEND=noninteractive
 
     # Check if sudo is available
     SUDO_CMD=""
