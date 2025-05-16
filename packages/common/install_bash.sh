@@ -15,8 +15,7 @@ echo "Detected Linux: $PRETTY_NAME"
 # Determine the package manager and package based on the distribution.
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
-    apt-get update
-    dpkg --configure -a
+    apt-get update && apt-get upgrade -y
     apt-get install build-essential tcl pkg-config libssl-dev curl wget -y && \
     curl -O https://download.redis.io/redis-stable.tar.gz && \
     tar xzf redis-stable.tar.gz && \
