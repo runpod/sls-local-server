@@ -19,7 +19,7 @@ import (
 
 var (
 	testConfig        []common.Test
-	currentTestPtr    int = -1
+	currentTestPtr    int = 0
 	results           []common.Result
 	testNumberChannel = make(chan int)
 )
