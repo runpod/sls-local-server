@@ -158,7 +158,6 @@ func startTests(log *zap.Logger) {
 		formattedInput, err := json.Marshal(map[string]any{
 			"input": test.Input,
 		})
-
 		if err != nil {
 			results = append(results, common.Result{
 				ID:     i,
@@ -233,7 +232,15 @@ func startTests(log *zap.Logger) {
 				}
 
 				if outputPayload, exists := responseData["output"]; exists {
-					result.Output = outputPayload
+					// Marshal output to determine its size independently of its concrete type
+					if marshaled, err := json.Marshal(outputPayload); err == nil && len(marshaled) > 10_000 {
+						log.Warn("Output payload exceeded size limit; redacted",
+							zap.String("test_name", test.Name),
+							zap.Int("bytes", len(marshaled)))
+						result.Output = "REDACTED (payload exceeded size limit)"
+					} else {
+						result.Output = outputPayload
+					}
 				}
 
 				results = append(results, result)
