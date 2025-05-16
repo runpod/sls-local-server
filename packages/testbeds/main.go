@@ -171,6 +171,8 @@ func startTests(log *zap.Logger) {
 			continue
 		}
 
+		fmt.Println("sending request to IDE runsync endpoint", formattedInput)
+
 		// Send request to IDE runsync endpoint
 		resp, err := client.Post("http://localhost:80/v2/IDE/runsync", "application/json", bytes.NewBuffer(formattedInput))
 		if err != nil {
