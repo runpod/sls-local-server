@@ -12,6 +12,8 @@ import (
 func RunCommand(command string, ide bool, log *zap.Logger) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 1024)
+	defer close(logBuffer)
+
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
 
 	log.Info("Running command", zap.String("command", command))
@@ -135,7 +137,6 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 	}
 
 	time.Sleep(time.Duration(10) * time.Second)
-	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
 	SendResultsToGraphQL("FAILED", &errorMsg, log,
 		[]Result{
@@ -154,6 +155,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	// Create a buffered channel for logs
 	logBuffer := make(chan string, 1024)
+	defer close(logBuffer)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
 
 	log.Info("Running command", zap.String("command", command))
@@ -265,7 +267,6 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	}
 
 	time.Sleep(time.Duration(10) * time.Second)
-	close(logBuffer)
 	errorMsg := "Command closed. Please view the logs for more information."
 	SendResultsToGraphQL("FAILED", &errorMsg, log, []Result{})
 

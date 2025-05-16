@@ -63,7 +63,7 @@ func parseTestConfig(log *zap.Logger) {
 				Status: "FAILED",
 				Error:  fmt.Sprintf("Could not parse the tests properly. %s", err.Error()),
 			})
-			common.SendResultsToGraphQL("SUCCESS", nil, log, results)
+			common.SendResultsToGraphQL("FAILED", nil, log, results)
 			log.Fatal("Failed to parse runpod tests",
 				zap.Error(err))
 		}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var Version = "dev"
@@ -32,11 +33,27 @@ func main() {
 		return
 	}
 
-	log, err := zap.NewProduction()
-	if err != nil {
-		log.Error("Failed to initialize logger", zap.Error(err))
-		return
+	encCfg := zapcore.EncoderConfig{
+		// Leave all key names blank so nothing extra is printed.
+		TimeKey:    "", // set to "ts" if you DO want a timestamp
+		LevelKey:   "", // set to "level" if you DO want a level
+		MessageKey: "msg",
+
+		// Encoders still run even if the key names are blank,
+		// so leave them nil when you don't need their output.
+		EncodeTime:  nil,
+		EncodeLevel: nil,
 	}
+
+	encoder := zapcore.NewConsoleEncoder(encCfg)
+
+	core := zapcore.NewCore(
+		encoder,
+		zapcore.AddSync(os.Stdout),
+		zap.InfoLevel, // change to DebugLevel for verbose output
+	)
+
+	log := zap.New(core)
 	defer log.Sync()
 
 	if _, err := os.Stat("/bin"); os.IsNotExist(err) {
