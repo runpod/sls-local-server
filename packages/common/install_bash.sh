@@ -25,13 +25,13 @@ if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
         SUDO_CMD="sudo"
     fi
 
-    $SUDO_CMD apt-get update
-    $SUDO_CMD apt-get install build-essential tcl pkg-config libssl-dev curl wget -y && \
+    $SUDO_CMD DEBIAN_FRONTEND=noninteractive apt-get update
+    $SUDO_CMD DEBIAN_FRONTEND=noninteractive apt-get install build-essential tcl pkg-config libssl-dev curl wget -y && \
     $SUDO_CMD curl -O https://download.redis.io/redis-stable.tar.gz && \
     $SUDO_CMD tar xzf redis-stable.tar.gz && \
     cd redis-stable && \
-    $SUDO_CMD make BUILD_TLS=yes && \
-    $SUDO_CMD make install
+    $SUDO_CMD DEBIAN_FRONTEND=noninteractive make BUILD_TLS=yes && \
+    $SUDO_CMD DEBIAN_FRONTEND=noninteractivemake install
     # apt-get install software-properties-common python3-launchpadlib -y
     # add-apt-repository ppa:redislabs/redis -y
     # apt-get update
