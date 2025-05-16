@@ -11,7 +11,7 @@ import (
 
 func RunCommand(command string, ide bool, log *zap.Logger) error {
 	// Create a buffered channel for logs
-	logBuffer := make(chan string, 16)
+	logBuffer := make(chan string, 1024)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
 
 	log.Info("Running command", zap.String("command", command))
@@ -153,7 +153,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 
 func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	// Create a buffered channel for logs
-	logBuffer := make(chan string, 16)
+	logBuffer := make(chan string, 1024)
 	logBuffer <- fmt.Sprintf("Running command: %s", command)
 
 	log.Info("Running command", zap.String("command", command))
