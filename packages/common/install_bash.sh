@@ -15,13 +15,20 @@ echo "Detected Linux: $PRETTY_NAME"
 # Determine the package manager and package based on the distribution.
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
-    apt-get update && apt-get upgrade -y
-    apt-get install build-essential tcl pkg-config libssl-dev curl wget -y && \
-    curl -O https://download.redis.io/redis-stable.tar.gz && \
-    tar xzf redis-stable.tar.gz && \
+
+    # Check if sudo is available
+    SUDO_CMD=""
+    if command -v sudo &> /dev/null; then
+        SUDO_CMD="sudo"
+    fi
+
+    $SUDO_CMD apt-get update
+    $SUDO_CMD apt-get install build-essential tcl pkg-config libssl-dev curl wget -y && \
+    $SUDO_CMD curl -O https://download.redis.io/redis-stable.tar.gz && \
+    $SUDO_CMD tar xzf redis-stable.tar.gz && \
     cd redis-stable && \
-    make BUILD_TLS=yes && \
-    make install
+    $SUDO_CMD make BUILD_TLS=yes && \
+    $SUDO_CMD make install
     # apt-get install software-properties-common python3-launchpadlib -y
     # add-apt-repository ppa:redislabs/redis -y
     # apt-get update
