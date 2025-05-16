@@ -138,11 +138,13 @@ func SendLogsToTinyBird(logBuffer chan string, log *zap.Logger) {
 			}
 
 			if len(buffer) >= 16 {
+				fmt.Println("sending logs to tinybird - above",len(buffer))
 				sendLogs(buffer, tinybirdToken, log)
 				buffer = make([]map[string]interface{}, 0)
 			}
 		case <-ticker.C:
 			if len(buffer) > 0 {
+				fmt.Println("sending logs to tinybird",len(buffer))
 				sendLogs(buffer, tinybirdToken, log)
 				buffer = make([]map[string]interface{}, 0)
 			}

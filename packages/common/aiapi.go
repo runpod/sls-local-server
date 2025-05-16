@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -92,5 +93,6 @@ func InstallAndRunAiApi(logger *zap.Logger) error {
 		RunAiApiCommand("/bin/aiapi", false, logger)
 	}()
 
+	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
