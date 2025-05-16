@@ -74,6 +74,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 	// Start goroutines to continuously read from pipes
 	go func() {
 		buf := make([]byte, 1024)
+		notAdded := true
 		for {
 			n, err := stdout.Read(buf)
 			if n > 0 {
@@ -91,7 +92,10 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 
 			}
 			if err != nil {
-				logBuffer <- fmt.Sprintf("Failed to read stdout: %s", err.Error())
+				if notAdded {
+					logBuffer <- fmt.Sprintf("Failed to read stdout: %s", err.Error())
+					notAdded = false
+				}
 				time.Sleep(time.Duration(1) * time.Second)
 				continue
 			}
@@ -100,6 +104,7 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 
 	go func() {
 		buf := make([]byte, 1024)
+		notAdded := true
 		for {
 			n, err := stderr.Read(buf)
 			if n > 0 {
@@ -116,6 +121,10 @@ func RunCommand(command string, ide bool, log *zap.Logger) error {
 
 			}
 			if err != nil {
+				if notAdded {
+					logBuffer <- fmt.Sprintf("Failed to read stderrr: %s", err.Error())
+					notAdded = false
+				}
 				time.Sleep(time.Duration(1) * time.Second)
 				continue
 			}
@@ -209,6 +218,7 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 	// Start goroutines to continuously read from pipes
 	go func() {
 		buf := make([]byte, 1024)
+		notAdded := true
 		for {
 			n, err := stdout.Read(buf)
 			if n > 0 {
@@ -226,8 +236,12 @@ func RunAiApiCommand(command string, ide bool, log *zap.Logger) error {
 
 			}
 			if err != nil {
-				logBuffer <- fmt.Sprintf("Failed to read stdout: %s", err.Error())
-				break
+				if notAdded {
+					logBuffer <- fmt.Sprintf("Failed to read stdout: %s", err.Error())
+					notAdded = false
+				}
+				time.Sleep(time.Duration(1) * time.Second)
+				continue
 			}
 		}
 	}()
