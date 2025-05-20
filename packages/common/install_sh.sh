@@ -12,6 +12,9 @@ fi
 
 echo "Detected Linux: $PRETTY_NAME"
 
+export DEBIAN_FRONTEND=noninteractive
+export TZ=Etc/UTC
+
 # Determine the package manager and package based on the distribution.
 if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
     echo "Using apt-get for Debian/Ubuntu..."
