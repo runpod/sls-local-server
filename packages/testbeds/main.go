@@ -258,12 +258,24 @@ func RunTests(log *zap.Logger) {
 	gin.SetMode(gin.ReleaseMode)
 	common.InstallAndRunAiApi(log)
 
+	startedAt := time.Now()
 	// kind of mandatory to wait for the aiapi to start
 	for {
 		time.Sleep(time.Duration(1) * time.Second)
 		aiApiStatus, err := http.Get("http://localhost:80/ping")
 		if err != nil {
 			continue
+		}
+		if time.Since(startedAt) > 8*time.Minute {
+			log.Error("Failed to start AI API after 8 minutes")
+			results = append(results, common.Result{
+				ID:     0,
+				Status: "FAILED",
+				Error:  "Failed to start AI API after 8 minutes. This could be a network issue. Please restart the build and tests.",
+			})
+			common.SendResultsToGraphQL("FAILED", nil, log, results)
+			time.Sleep(time.Duration(10) * time.Second)
+			os.Exit(1)
 		}
 		if aiApiStatus.StatusCode == 200 {
 			break

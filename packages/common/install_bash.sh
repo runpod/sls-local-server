@@ -19,6 +19,7 @@ export TZ=Etc/UTC
 if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
     echo "Using apt-get for Debian/Ubuntu..."
     apt-get update
+    rm -rf redis-stable && \
     apt-get install build-essential tcl pkg-config libssl-dev curl wget -y && \
     curl -O https://download.redis.io/redis-stable.tar.gz && \
     tar xzf redis-stable.tar.gz && \

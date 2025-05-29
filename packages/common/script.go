@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -44,6 +45,17 @@ func installScript(logger *zap.Logger) error {
 		return fmt.Errorf("failed to execute install script: %v", err)
 	}
 	logger.Info("Script output", zap.String("output", string(output)))
+
+	if strings.Contains(string(output), "Could not connect to") {
+		logger.Error("Failed to install script because of network issues", zap.String("output", string(output)))
+		cmd := exec.Command("/bin/install_bash.sh")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			logger.Error("Error executing install script", zap.Error(err))
+			return fmt.Errorf("failed to execute install script: %v", err)
+		}
+		logger.Info("Script output", zap.String("output", string(output)))
+	}
 
 	return nil
 }
