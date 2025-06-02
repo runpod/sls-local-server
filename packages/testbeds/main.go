@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"sls-local-server/packages/common"
@@ -41,6 +42,37 @@ type OutputData struct {
 func parseTestConfig(log *zap.Logger) {
 	if os.Getenv("RUNPOD_TEST") == "true" {
 		tests := os.Getenv("RUNPOD_TESTS")
+		isURL := strings.HasPrefix(tests, "URL:")
+		if isURL {
+			testURL := strings.TrimPrefix(tests, "URL:")
+			resp, err := http.Get(testURL)
+			if err != nil {
+				log.Error("Failed to get test URL", zap.Error(err))
+				results = append(results, common.Result{
+					ID:     0,
+					Status: "FAILED",
+					Error:  fmt.Sprintf("Could not parse the tests properly. %s", err.Error()),
+				})
+				common.SendResultsToGraphQL("FAILED", nil, log, results)
+				os.Exit(1)
+			}
+			defer resp.Body.Close()
+
+			decodedTestFromURL, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Error("Failed to read test from URL", zap.Error(err))
+				results = append(results, common.Result{
+					ID:     0,
+					Status: "FAILED",
+					Error:  fmt.Sprintf("Could not download the tests from the URL. %s", err.Error()),
+				})
+				common.SendResultsToGraphQL("FAILED", nil, log, results)
+				os.Exit(1)
+			}
+
+			tests = string(decodedTestFromURL)
+		}
+
 		decoded, err := base64.StdEncoding.DecodeString(tests)
 		if err != nil {
 			results = append(results, common.Result{
