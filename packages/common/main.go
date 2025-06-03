@@ -105,6 +105,7 @@ func SendLogsToTinyBird(logBuffer chan string, log *zap.Logger) {
 		case logMsg, ok := <-logBuffer:
 			if !ok {
 				log.Error("log buffer closed")
+				time.Sleep(10 * time.Second)
 				continue
 			}
 
