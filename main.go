@@ -82,7 +82,7 @@ func main() {
 
 		if initializeIDE {
 			ide.SYSTEM_INITIALIZED = true
-			cmd := fmt.Sprintf("cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token %s --host 0.0.0.0 --port 8080 --enable-remote-auto-shutdown", os.Getenv("IDE_CONNECTION_STRING"))
+			cmd := fmt.Sprintf("cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token %s --host 0.0.0.0 --port 8080 --enable-remote-auto-shutdown --install-extension RunPod.runpod-build", os.Getenv("IDE_CONNECTION_STRING"))
 			err = common.RunCommand(cmd, true, log)
 			if err != nil {
 				log.Error("Failed to run command", zap.Error(err))
