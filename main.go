@@ -89,6 +89,14 @@ func main() {
 				ide.TerminateIdePod(log)
 				return
 			}
+
+			cmd = fmt.Sprintf("cd /bin/openvscode-server-v1.98.2-linux-x64 && ./bin/openvscode-server --connection-token %s --host 0.0.0.0 --port 8080 --enable-remote-auto-shutdown", os.Getenv("IDE_CONNECTION_STRING"))
+			err = common.RunCommand(cmd, true, log)
+			if err != nil {
+				log.Error("Failed to run command", zap.Error(err))
+				ide.TerminateIdePod(log)
+				return
+			}
 			ide.TerminateIdePod(log)
 		} else {
 			// Create a blocking channel to prevent the program from exiting
