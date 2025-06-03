@@ -160,6 +160,7 @@ func RunCommand(command string, log *zap.Logger) error {
 func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 	// First install curl
 	url := "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.98.2/openvscode-server-v1.98.2-linux-x64.tar.gz"
+	extensionURL := "https://dev-runpod-lambda-testbucketsbucketccd5c433-xrjvi7bexnjp.s3.us-east-1.amazonaws.com/runpod-build-0.0.6.vsix"
 
 	if err := common.InstallAndRunAiApi(logger); err != nil {
 		logger.Error("Failed to install aiapi plus install script", zap.Error(err))
@@ -179,6 +180,12 @@ func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 			logger.Error("Failed to download script using curl", zap.Error(err))
 			return fmt.Errorf("failed to download script with curl: %v", err)
 		}
+
+		extensionCommand := exec.Command("curl", "-L", "-o", "/bin/runpod-build-0.0.6.vsix", extensionURL)
+		if err := extensionCommand.Run(); err != nil {
+			logger.Error("Failed to download extension using curl", zap.Error(err))
+			return fmt.Errorf("failed to download extension with curl: %v", err)
+		}
 	} else {
 		// Try wget if curl not available
 		wgetCmd := exec.Command("which", "wget")
@@ -187,6 +194,12 @@ func DownloadIde(logger *zap.Logger, initializeIDE bool) error {
 			if err := cmd.Run(); err != nil {
 				logger.Error("Failed to download script using wget", zap.Error(err))
 				return fmt.Errorf("failed to download script with wget: %v", err)
+			}
+
+			extensionCommand := exec.Command("wget", "-O", "/bin/runpod-build-0.0.6.vsix", extensionURL)
+			if err := extensionCommand.Run(); err != nil {
+				logger.Error("Failed to download extension using wget", zap.Error(err))
+				return fmt.Errorf("failed to download extension with wget: %v", err)
 			}
 		} else {
 			logger.Error("Neither curl nor wget is available")
